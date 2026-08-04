@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Console Overview - PhishGuard Enterprise XDR{% endblock %}
+{% block title %}Administrator Control Center · PhishGuard{% endblock %}
 
 {% block content %}
 <div class="admin-dashboard">
@@ -19,7 +19,7 @@
 
     <!-- Admin KPI Cards -->
     <div class="row g-4 mb-4">
-        <div class="col-lg-4 col-md-6">
+        <div class="col-md-6">
             <div class="kpi-card kpi-blue">
                 <div class="kpi-card-header">
                     <div class="kpi-icon-wrapper bg-blue-subtle">
@@ -35,7 +35,7 @@
             </div>
         </div>
 
-        <div class="col-lg-4 col-md-6">
+        <div class="col-md-6">
             <div class="kpi-card kpi-purple">
                 <div class="kpi-card-header">
                     <div class="kpi-icon-wrapper bg-purple-subtle">
@@ -47,37 +47,6 @@
                     <span class="kpi-label">TOTAL SCANS EXECUTED</span>
                     <h2 class="kpi-value font-mono counter-value" data-target="{{ stats.scans }}">{{ stats.scans }}</h2>
                     <p class="kpi-subtext"><i class="bi bi-activity text-primary me-1"></i> Cumulative email investigations</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4 col-md-12">
-            <div class="kpi-card kpi-red">
-                <div class="kpi-card-header">
-                    <div class="kpi-icon-wrapper bg-red-subtle">
-                        <i class="bi bi-bug-fill text-danger"></i>
-                    </div>
-                    <span class="trend-badge trend-danger font-mono"><i class="bi bi-shield-lock"></i> Privileged Access</span>
-                </div>
-                <div class="kpi-card-body">
-                    <span class="kpi-label">ADMINISTRATOR ACCOUNTS</span>
-                    <h2 class="kpi-value text-danger font-mono counter-value" data-target="{{ stats.admins }}">{{ stats.admins }}</h2>
-                    <p class="kpi-subtext"><i class="bi bi-person-lock text-danger me-1"></i> Privileged platform administrators</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <div class="kpi-card kpi-amber">
-                <div class="kpi-card-header">
-                    <div class="kpi-icon-wrapper bg-amber-subtle">
-                        <i class="bi bi-person-workspace text-warning"></i>
-                    </div>
-                    <span class="trend-badge trend-warning font-mono"><i class="bi bi-radar"></i> Investigation Team</span>
-                </div>
-                <div class="kpi-card-body">
-                    <span class="kpi-label">ANALYST ACCOUNTS</span>
-                    <h2 class="kpi-value text-warning font-mono counter-value" data-target="{{ stats.analysts }}">{{ stats.analysts }}</h2>
-                    <p class="kpi-subtext"><i class="bi bi-person-check text-warning me-1"></i> Staff permitted to review reports</p>
                 </div>
             </div>
         </div>

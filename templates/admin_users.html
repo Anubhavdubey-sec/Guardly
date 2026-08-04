@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}User Management & Access Control - PhishGuard Enterprise XDR{% endblock %}
+{% block title %}User Provisioning & Roles · PhishGuard{% endblock %}
 
 {% block content %}
 <div class="admin-users">
@@ -17,20 +17,20 @@
             <div class="col-md-7">
                 <label class="form-label text-muted small font-mono" for="user-search">SEARCH ACCOUNTS</label>
                 <div class="position-relative">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input id="user-search" name="q" value="{{ search }}" class="form-control ps-5" placeholder="Username or email address">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
+                    <input id="user-search" name="q" value="{{ search }}" class="form-control ps-5 font-mono" placeholder="Search by username or email address...">
                 </div>
             </div>
             <div class="col-md-3">
                 <label class="form-label text-muted small font-mono" for="user-role-filter">ROLE</label>
-                <select id="user-role-filter" name="role" class="form-select">
+                <select id="user-role-filter" name="role" class="form-select font-mono">
                     <option value="">All roles</option>
                     {% for role in roles %}<option value="{{ role }}" {% if selected_role == role %}selected{% endif %}>{{ role|title }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Filter</button>
-                <a class="btn btn-outline-light" href="{{ url_for('admin.users') }}" aria-label="Clear filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+                <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel-fill me-1"></i> Filter</button>
+                <a class="btn btn-outline-light" href="{{ url_for('admin.users') }}" aria-label="Clear filters" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
             </div>
         </form>
     </div>
@@ -42,7 +42,7 @@
                 <h2 class="soc-card-title fs-5">Active User Directory</h2>
             </div>
             <span class="badge bg-dark border border-secondary text-muted font-mono" style="font-size: 0.75rem;">
-                {{ users|length }} ACCOUNTS
+                {{ users|length }} ACCOUNT{% if users|length != 1 %}S{% endif %} FOUND
             </span>
         </div>
 
@@ -62,13 +62,13 @@
                             <tr class="soc-table-row">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar-badge">
+                                        <div class="user-avatar-badge flex-shrink-0">
                                             {{ user.username[0]|upper }}
                                         </div>
-                                        <span class="fw-semibold text-white">{{ user.username }}</span>
+                                        <span class="fw-semibold text-white text-break">{{ user.username }}</span>
                                     </div>
                                 </td>
-                                <td class="text-muted small font-mono">{{ user.email }}</td>
+                                <td class="text-muted small font-mono text-break">{{ user.email }}</td>
                                 <td>
                                     {% if user.role == 'admin' %}
                                         <span class="badge bg-danger-subtle text-danger font-mono border border-danger-subtle py-1 px-2"><i class="bi bi-shield-lock-fill me-1"></i>ADMINISTRATOR</span>
@@ -80,6 +80,7 @@
                                 </td>
                                 <td class="text-end">
                                     <form method="post" action="{{ url_for('admin.change_role', user_id=user.id) }}" class="d-inline-flex gap-2 align-items-center justify-content-end">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <select name="role" class="form-select form-select-sm w-auto font-mono" style="font-size: 0.82rem;">
                                             {% for r in roles %}
                                                 <option value="{{ r }}" {% if user.role == r %}selected{% endif %}>{{ r|upper }}</option>

@@ -5,10 +5,10 @@
             <a class="topbar-workspace d-none d-xl-flex align-items-center gap-2 text-decoration-none" href="{{ url_for('auth.dashboard') }}">
                 <i class="bi bi-grid-1x2-fill"></i><span>Investigation workspace</span>
             </a>
-            <div class="topbar-search d-none d-md-flex align-items-center">
-                <i class="bi bi-search search-icon"></i>
-                <input type="text" class="form-control form-control-sm search-input" placeholder="Search reports, domains, IPs…" readonly onclick="window.location.href='{{ url_for('scanner.history') }}'">
-                <kbd class="search-kbd">CTRL K</kbd>
+            <div class="topbar-search d-none d-md-flex align-items-center position-relative">
+                <i class="bi bi-search search-icon position-absolute" style="pointer-events: none; z-index: 5;"></i>
+                <input type="text" class="form-control form-control-sm search-input ps-5" placeholder="Search reports, domains, IPs…" readonly onclick="window.location.href='{{ url_for('scanner.history') }}'">
+                <kbd class="search-kbd position-absolute" style="pointer-events: none; z-index: 5;">CTRL K</kbd>
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">

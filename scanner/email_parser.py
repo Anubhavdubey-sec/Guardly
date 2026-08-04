@@ -3,6 +3,8 @@ from email import policy
 from email.utils import parseaddr
 import re
 
+from scanner.timeline import build_delivery_timeline
+
 URL_REGEX = re.compile(r"https?://[^\s<>\"']+|www\.[^\s<>\"']+")
 DOMAIN_REGEX = re.compile(r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}")
 IP_REGEX = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
@@ -53,6 +55,8 @@ def parse_email(file_path):
     extracted_domains = list(dict.fromkeys(DOMAIN_REGEX.findall(full_body)))
     extracted_ips = list(dict.fromkeys(IP_REGEX.findall(full_body)))
 
+    timeline_analysis = build_delivery_timeline(msg)
+
     return {
         "from": str(from_header),
         "from_address": from_address,
@@ -72,4 +76,5 @@ def parse_email(file_path):
             "ip_addresses": extracted_ips,
             "urls": extracted_urls,
         },
+        "delivery_timeline": timeline_analysis.to_dict(),
     }

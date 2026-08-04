@@ -6,6 +6,7 @@ from werkzeug.security import check_password_hash
 from models.scan import EmailScan
 from models.user import User, db
 from services.audit import record_event
+from services.limiter import limiter
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -61,6 +62,7 @@ def home():
 
 @auth_bp.route("/staff/login", methods=["GET", "POST"])
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def login():
     if getattr(g, "current_user", None) and g.current_user.role in {User.ROLE_ADMIN, User.ROLE_ANALYST}:
         return redirect(url_for("auth.dashboard"))

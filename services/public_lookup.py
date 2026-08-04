@@ -1,6 +1,7 @@
 import json
 import socket
 import urllib.request
+from services.ssrf import is_ip_private_or_internal, validate_url_ssrf
 
 COUNTRY_FLAGS = {
     "US": "🇺🇸", "GB": "🇬🇧", "CA": "🇨🇦", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -14,8 +15,8 @@ def get_ip_location(ip_str):
 
     ip_clean = ip_str.strip()
 
-    # Check for private or loopback IP addresses
-    if ip_clean.startswith("127.") or ip_clean.startswith("10.") or ip_clean.startswith("192.168.") or ip_clean.startswith("172.16.") or ip_clean == "::1":
+    # Check for private, loopback, or internal IP addresses via ipaddress module
+    if is_ip_private_or_internal(ip_clean):
         return {
             "ip": ip_clean,
             "city": "Local / Internal Network",

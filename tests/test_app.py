@@ -20,6 +20,7 @@ class ScannerRouteTests(unittest.TestCase):
         self.app = create_app(
             {
                 "TESTING": True,
+                "WTF_CSRF_ENABLED": False,
                 "SECRET_KEY": "test-secret",
                 "SQLALCHEMY_DATABASE_URI": f"sqlite:///{root}/test.db",
                 "UPLOAD_FOLDER": os.path.join(self.temp_directory.name, "uploads"),
@@ -63,8 +64,8 @@ class ScannerRouteTests(unittest.TestCase):
     def test_home_page_opens_public_email_scanner(self):
         response = self.client.get("/", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Analyze a suspicious message", response.data)
-        self.assertIn(b"No account is required", response.data)
+        self.assertIn(b"PhishGuard", response.data)
+        self.assertIn(b"Choose file", response.data)
 
     def test_public_upload_creates_anonymous_record_and_hides_staff_actions(self):
         email = b"""From: Newsletter <news@community.example>\nTo: test@example.com\nSubject: July update\n\nThis is a normal newsletter."""
@@ -110,6 +111,11 @@ class ScannerRouteTests(unittest.TestCase):
         self.assertEqual(history.status_code, 200)
         self.assertIn(b"Public visitor", history.data)
         self.assertIn(b"Urgent account suspended", history.data)
+
+        # Verify searching by "Public visitor" or "public" matches unassigned public scans
+        public_search = self.client.get("/history", query_string={"q": "public"})
+        self.assertEqual(public_search.status_code, 200)
+        self.assertIn(b"Urgent account suspended", public_search.data)
 
         self.assertEqual(self.client.get(f"/scans/{scan_id}").status_code, 200)
         csv_export = self.client.get("/history/export.csv", query_string={"verdict": "High Risk"})

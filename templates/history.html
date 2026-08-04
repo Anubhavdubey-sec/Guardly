@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Threat Telemetry & Scan History - PhishGuard Enterprise XDR{% endblock %}
+{% block title %}Telemetry Logs · PhishGuard{% endblock %}
 
 {% block content %}
 <div class="history-container">
@@ -13,7 +13,7 @@
         </div>
         <div class="page-heading-actions">
             {% if can_download %}
-                <a href="{{ url_for('scanner.export_history_csv', **filters) }}" class="btn btn-outline-light"><i class="bi bi-download me-1"></i> Export Telemetry CSV</a>
+                <a href="{{ url_for('scanner.export_history_csv', **filters) }}" class="btn btn-outline-light btn-sm"><i class="bi bi-download me-1"></i> Export Telemetry Report</a>
             {% endif %}
         </div>
     </div>
@@ -23,12 +23,12 @@
         <form method="get" class="row g-3 align-items-center">
             <div class="col-md-5">
                 <div class="position-relative">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
                     <input type="text" name="q" value="{{ filters.q }}" class="form-control ps-5" placeholder="Search subject line, sender domain, or user...">
                 </div>
             </div>
             <div class="col-md-3">
-                <select name="verdict" class="form-select">
+                <select name="verdict" class="form-select" aria-label="Filter by verdict">
                     <option value="">Filter by All Verdicts</option>
                     {% for v in verdicts %}
                         <option value="{{ v }}" {% if filters.verdict == v %}selected{% endif %}>{{ v }}</option>
@@ -79,13 +79,13 @@
                             <tr class="soc-table-row">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-file-earmark-text text-info"></i>
-                                        <a href="{{ url_for('scanner.view_scan', scan_id=scan.id) }}" class="text-white text-decoration-none fw-semibold table-link">
+                                        <i class="bi bi-file-earmark-text text-info flex-shrink-0"></i>
+                                        <a href="{{ url_for('scanner.view_scan', scan_id=scan.id) }}" class="text-white text-decoration-none fw-semibold table-link text-break">
                                             {{ scan.subject or 'Untitled Message' }}
                                         </a>
                                     </div>
                                 </td>
-                                <td class="text-muted small font-mono">{{ scan.sender }}</td>
+                                <td class="text-muted small font-mono text-break">{{ scan.sender }}</td>
                                 <td>
                                     <span class="badge bg-dark border border-secondary text-muted font-mono" style="font-size: 0.72rem;">
                                         <i class="bi bi-person me-1"></i>{{ scan.user.username if scan.user else 'Public visitor' }}
@@ -105,6 +105,7 @@
                                     </a>
                                     {% if can_delete %}
                                         <form method="post" action="{{ url_for('scanner.delete_scan', scan_id=scan.id) }}" class="d-inline" onsubmit="return confirm('Delete scan report #{{ scan.id }}?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" style="font-size: 0.78rem;" title="Delete Record">
                                                 <i class="bi bi-trash3"></i>
                                             </button>

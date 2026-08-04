@@ -107,6 +107,137 @@
                 {% endif %}
             </section>
 
+            <!-- Email Delivery Timeline Section -->
+            <section class="investigation-card timeline-section">
+                <div class="investigation-card-header mb-3">
+                    <div>
+                        <div class="section-overline text-primary font-mono fw-bold">DFIR ROUTING TELEMETRY</div>
+                        <h2 class="h4 text-white fw-bold mb-0">Email Delivery Timeline</h2>
+                    </div>
+                    {% if analysis.delivery_timeline and analysis.delivery_timeline.has_timeline %}
+                        <span class="count-badge bg-primary-subtle text-primary font-mono fw-bold">{{ analysis.delivery_timeline.summary.total_hops }} Hops Reconstructed</span>
+                    {% else %}
+                        <span class="count-badge bg-secondary-subtle text-muted font-mono">No Hops</span>
+                    {% endif %}
+                </div>
+
+                {% if analysis.delivery_timeline and analysis.delivery_timeline.has_timeline %}
+                    <!-- Summary Metrics Panel -->
+                    <div class="timeline-summary-bar p-3 rounded-3 mb-4" style="background: var(--pg-surface-subtle); border: 1px solid var(--pg-border);">
+                        <div class="row g-3 text-center">
+                            <div class="col-6 col-sm-4 col-md-2">
+                                <small class="text-muted d-block font-mono text-uppercase" style="font-size: 0.68rem;">Total Hops</small>
+                                <span class="fw-bold text-white fs-5 font-mono">{{ analysis.delivery_timeline.summary.total_hops }}</span>
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-2">
+                                <small class="text-muted d-block font-mono text-uppercase" style="font-size: 0.68rem;">Internal Hops</small>
+                                <span class="fw-bold text-info fs-5 font-mono">{{ analysis.delivery_timeline.summary.internal_hops }}</span>
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-2">
+                                <small class="text-muted d-block font-mono text-uppercase" style="font-size: 0.68rem;">External Hops</small>
+                                <span class="fw-bold text-warning fs-5 font-mono">{{ analysis.delivery_timeline.summary.external_hops }}</span>
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-2">
+                                <small class="text-muted d-block font-mono text-uppercase" style="font-size: 0.68rem;">Max Delay</small>
+                                <span class="fw-bold text-white fs-5 font-mono">{{ analysis.delivery_timeline.summary.max_delay_display }}</span>
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-2">
+                                <small class="text-muted d-block font-mono text-uppercase" style="font-size: 0.68rem;">Avg Delay</small>
+                                <span class="fw-bold text-white fs-5 font-mono">{{ analysis.delivery_timeline.summary.avg_delay_display }}</span>
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-2">
+                                <small class="text-muted d-block font-mono text-uppercase" style="font-size: 0.68rem;">Total Flow Time</small>
+                                <span class="fw-bold text-primary fs-5 font-mono">{{ analysis.delivery_timeline.summary.total_delivery_time_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vertical Timeline Cards -->
+                    <div class="delivery-timeline-flow position-relative ps-3 ps-md-4">
+                        {% for hop in analysis.delivery_timeline.hops %}
+                            <div class="timeline-hop-card mb-4 position-relative">
+                                <!-- Hop Number Marker -->
+                                <div class="timeline-hop-marker position-absolute start-0 top-0 translate-middle-x rounded-circle d-flex align-items-center justify-content-center fw-bold font-mono"
+                                     style="width: 32px; height: 32px; background: {% if hop.is_internal %}rgba(59, 130, 246, 0.2){% else %}rgba(245, 158, 11, 0.2){% endif %}; border: 2px solid {% if hop.is_internal %}var(--pg-blue){% else %}var(--accent-amber){% endif %}; color: #fff; font-size: 0.82rem; z-index: 2;">
+                                    {{ hop.hop_number }}
+                                </div>
+
+                                <div class="card p-3 rounded-3 ms-4" style="background: var(--pg-surface); border: 1px solid var(--pg-border);">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge font-mono {% if hop.is_internal %}bg-primary-subtle text-primary{% else %}bg-warning-subtle text-warning{% endif %}" style="font-size: 0.72rem;">
+                                                <i class="bi {% if hop.is_internal %}bi-shield-check{% else %}bi-globe2{% endif %} me-1"></i>{{ hop.relay_type }}
+                                            </span>
+                                            <span class="badge font-mono bg-dark text-light border border-secondary border-opacity-25" style="font-size: 0.72rem;">
+                                                <i class="bi bi-hdd-network me-1"></i>{{ hop.ip_type }}
+                                            </span>
+                                            {% if hop.protocol %}
+                                                <span class="badge font-mono bg-secondary-subtle text-muted" style="font-size: 0.72rem;">
+                                                    <i class="bi bi-terminal me-1"></i>{{ hop.protocol }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-secondary-subtle text-muted font-mono" style="font-size: 0.72rem;">
+                                                <i class="bi bi-clock me-1"></i>Delay: {{ hop.delay_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-2 font-mono small">
+                                        <div class="col-12 col-md-6">
+                                            <span class="text-muted d-block" style="font-size: 0.7rem;">SENDING SERVER (FROM)</span>
+                                            <div class="text-white fw-semibold text-break"><i class="bi bi-box-arrow-up-right me-1 text-muted"></i>{{ hop.from_host }}</div>
+                                            {% if hop.from_ip != 'None Recorded' %}
+                                                <div class="text-muted small"><i class="bi bi-diagram-2 me-1"></i>IP: <span class="text-info">{{ hop.from_ip }}</span></div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <span class="text-muted d-block" style="font-size: 0.7rem;">RECEIVING SERVER (BY)</span>
+                                            <div class="text-white fw-semibold text-break"><i class="bi bi-box-arrow-in-down me-1 text-muted"></i>{{ hop.by_host }}</div>
+                                            {% if hop.location_display != 'Location Unavailable' %}
+                                                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ hop.location_display }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {% if hop.timestamp_raw %}
+                                        <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                            <small class="text-muted font-mono" style="font-size: 0.73rem;">
+                                                <i class="bi bi-calendar-event me-1"></i>{{ hop.timestamp_raw }}
+                                            </small>
+                                            {% if hop.auth_info %}
+                                                <small class="text-info font-mono" style="font-size: 0.73rem;">
+                                                    <i class="bi bi-key me-1"></i>{{ hop.auth_info }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if hop.observations %}
+                                        <div class="mt-2 d-flex flex-wrap gap-1">
+                                            {% for obs in hop.observations %}
+                                                <span class="badge bg-danger-subtle text-danger font-mono" style="font-size: 0.68rem;">
+                                                    <i class="bi bi-info-circle me-1"></i>Observation: {{ obs }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="quiet-state py-4 text-center">
+                        <i class="bi bi-diagram-3 fs-2 text-muted mb-2"></i>
+                        <div>
+                            <strong class="text-white d-block mb-1">No delivery path available</strong>
+                            <span class="text-muted small">This email payload does not contain RFC 822 Received headers.</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+
             <section class="investigation-card">
                 <div class="investigation-card-header">
                     <div><div class="section-overline">Indicator inventory</div><h2>URLs, domains, IPs &amp; hashes</h2></div>
@@ -228,7 +359,7 @@
 <div class="report-footer-actions">
     <a class="btn btn-primary" href="{{ url_for('scanner.upload') }}"><i class="bi bi-cloud-arrow-up"></i> Analyze another email</a>
     {% if current_user and current_user.role in ['admin', 'analyst'] %}<a class="btn btn-outline-light" href="{{ url_for('scanner.history') }}"><i class="bi bi-layers-half"></i> Return to history</a>{% endif %}
-    {% if current_user and current_user.role == 'admin' %}<form method="post" action="{{ url_for('scanner.delete_scan', scan_id=scan.id) }}" onsubmit="return confirm('Delete this scan report? This action cannot be undone.');"><button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> Delete report</button></form>{% endif %}
+    {% if current_user and current_user.role == 'admin' %}<form method="post" action="{{ url_for('scanner.delete_scan', scan_id=scan.id) }}" onsubmit="return confirm('Delete this scan report? This action cannot be undone.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> Delete report</button></form>{% endif %}
 </div>
 <span id="copyFeedback" class="visually-hidden" aria-live="polite"></span>
 

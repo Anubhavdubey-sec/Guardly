@@ -31,12 +31,15 @@ def dashboard():
 @roles_required(User.ROLE_ADMIN)
 def users():
     q = request.args.get("q", "").strip()
+    role = request.args.get("role", "").strip()
     query = User.query
     if q:
         pattern = f"%{q}%"
         query = query.filter(User.username.ilike(pattern) | User.email.ilike(pattern))
+    if role in User.ROLES:
+        query = query.filter_by(role=role)
     users_list = query.order_by(User.created_at.desc()).all()
-    return render_template("admin_users.html", users=users_list, roles=User.ROLES)
+    return render_template("admin_users.html", users=users_list, roles=User.ROLES, search=q, selected_role=role)
 
 
 @admin_bp.route("/users/<int:user_id>/role", methods=["POST"])
@@ -52,6 +55,13 @@ def change_role(user_id):
     if new_role not in User.ROLES:
         flash("Invalid role.", "danger")
         return redirect(url_for("admin.users"))
+
+    # Prevent admin self-lockout if this is the last administrator account
+    if user.role == User.ROLE_ADMIN and new_role != User.ROLE_ADMIN:
+        admin_count = User.query.filter_by(role=User.ROLE_ADMIN).count()
+        if admin_count <= 1:
+            flash("Cannot remove the last administrator account.", "danger")
+            return redirect(url_for("admin.users"))
 
     user.role = new_role
     record_event(

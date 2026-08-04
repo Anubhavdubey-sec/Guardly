@@ -30,6 +30,7 @@ from scanner.phishing_detector import analyze_email
 from services.audit import record_event
 from services.report_generator import build_scan_report
 from services.public_lookup import PublicLookupClient, enrich_analysis_with_public_context, get_ip_location
+from services.ssrf import is_ip_private_or_internal, safe_http_get, validate_url_ssrf
 
 
 scanner_bp = Blueprint("scanner", __name__)
@@ -73,6 +74,33 @@ def _scan_analysis(scan, email_data):
         "message": "This older scan does not include public registration or IP context.",
         "lookups": [],
     }
+
+    timeline_data = email_data.get("delivery_timeline")
+    if not timeline_data:
+        from scanner.timeline import TimelineAnalysis, calculate_delivery_delays, generate_delivery_summary, parse_received_headers
+        received_headers = []
+        if isinstance(email_data.get("headers"), dict):
+            raw_rec = email_data["headers"].get("Received") or email_data["headers"].get("received") or []
+            if isinstance(raw_rec, str):
+                received_headers = [raw_rec]
+            elif isinstance(raw_rec, list):
+                received_headers = raw_rec
+        parsed_hops = parse_received_headers(received_headers)
+        if parsed_hops:
+            chronological_hops = list(reversed(parsed_hops))
+            for idx, hop in enumerate(chronological_hops, start=1):
+                hop.hop_number = idx
+            hops_with_delays = calculate_delivery_delays(chronological_hops)
+            summary = generate_delivery_summary(hops_with_delays)
+            timeline_data = TimelineAnalysis(
+                hops=hops_with_delays,
+                summary=summary,
+                has_timeline=True,
+                summary_message=f"Reconstructed {len(hops_with_delays)} mail server relay hops.",
+            ).to_dict()
+        else:
+            timeline_data = TimelineAnalysis(has_timeline=False, summary_message="No delivery path available.").to_dict()
+
     return {
         "score": scan.risk_score,
         "verdict": scan.verdict,
@@ -81,6 +109,7 @@ def _scan_analysis(scan, email_data):
         "url_assessments": current_analysis["url_assessments"],
         "auth_results": current_analysis["auth_results"],
         "reputation_data": reputation_data,
+        "delivery_timeline": timeline_data,
     }
 
 
@@ -103,15 +132,24 @@ def _history_filters():
 
     if search:
         pattern = f"%{search}%"
-        query = query.filter(
-            or_(
-                EmailScan.subject.ilike(pattern),
-                EmailScan.sender.ilike(pattern),
-                EmailScan.receiver.ilike(pattern),
-            )
-        )
+        conditions = [
+            EmailScan.subject.ilike(pattern),
+            EmailScan.sender.ilike(pattern),
+            EmailScan.receiver.ilike(pattern),
+            EmailScan.reply_to.ilike(pattern),
+            EmailScan.urls.ilike(pattern),
+            EmailScan.iocs.ilike(pattern),
+            User.username.ilike(pattern),
+            User.email.ilike(pattern),
+        ]
+        if search.isdigit():
+            conditions.append(EmailScan.id == int(search))
+        if any(term in search.lower() for term in ["public", "visitor", "anon", "guest", "unassigned"]):
+            conditions.append(EmailScan.user_id.is_(None))
+
+        query = query.outerjoin(User).filter(or_(*conditions))
     if verdict in VERDICTS:
-        query = query.filter_by(verdict=verdict)
+        query = query.filter(EmailScan.verdict == verdict)
 
     scans = query.order_by(EmailScan.scan_time.desc()).all()
     if category:
@@ -355,7 +393,7 @@ def scan_url():
     sha1_hash = hashlib.sha1(url_bytes).hexdigest()
     sha256_hash = hashlib.sha256(url_bytes).hexdigest()
 
-    # Real HTTP reachability and response telemetry check
+    # Real HTTP reachability and response telemetry check via safe_http_get (IP-pinned & SSRF-validated)
     http_status = "Unreachable / Timed Out"
     server_banner = "Unknown"
     content_type = "Unknown"
@@ -363,26 +401,18 @@ def scan_url():
     redirect_destination = None
 
     try:
-        req = urllib.request.Request(
-            target_url,
-            headers={"User-Agent": "PhishGuard-URL-Scanner/2.0 (+https://phishguard.enterprise)"}
-        )
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-
         start_time = time.time()
-        with urllib.request.urlopen(req, timeout=2.5, context=ctx) as resp:
-            response_ms = round((time.time() - start_time) * 1000)
-            http_status = f"{resp.status} {resp.reason}"
-            server_banner = resp.headers.get("Server", "Generic Web Server")
-            content_type = resp.headers.get("Content-Type", "text/html")
-            if resp.geturl() != target_url:
-                redirect_destination = resp.geturl()
-    except urllib.error.HTTPError as err:
-        http_status = f"{err.code} {err.reason}"
-        server_banner = err.headers.get("Server", "Unknown")
-        content_type = err.headers.get("Content-Type", "Unknown")
+        status_code, body, final_url, server_banner, content_type = safe_http_get(target_url, timeout=2.5)
+        response_ms = round((time.time() - start_time) * 1000)
+        if status_code > 0:
+            http_status = f"{status_code} Response"
+        else:
+            http_status = server_banner
+        
+        if final_url != target_url:
+            redirect_destination = final_url
+    except ValueError as err:
+        http_status = f"Blocked: {err}"
     except Exception as err:
         http_status = "Offline / Connection Refused"
 
@@ -472,7 +502,7 @@ def scan_ioc():
     # Determine IOC type
     if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", query):
         ioc_type = "IPv4 Address"
-        is_private_ip = query.startswith("127.") or query.startswith("10.") or query.startswith("192.168.") or query.startswith("172.16.")
+        is_private_ip = is_ip_private_or_internal(query)
     elif len(query) in (32, 64) and re.match(r"^[a-fA-F0-9]+$", query):
         ioc_type = "Cryptographic Hash (" + ("MD5" if len(query) == 32 else "SHA-256") + ")"
         is_private_ip = False

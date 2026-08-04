@@ -17,6 +17,8 @@ from routes.admin import admin_bp
 from routes.auth import auth_bp
 from routes.scanner import scanner_bp
 from services.audit import record_event
+from services.csrf import init_csrf
+from services.limiter import limiter
 
 
 def initialize_database():
@@ -88,7 +90,12 @@ def create_app(test_config=None):
         app.config.update(test_config)
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
+    if "RATELIMIT_ENABLED" not in app.config:
+        app.config["RATELIMIT_ENABLED"] = not app.config.get("TESTING", False)
+
     db.init_app(app)
+    init_csrf(app)
+    limiter.init_app(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(scanner_bp)
     app.register_blueprint(admin_bp)
@@ -97,6 +104,21 @@ def create_app(test_config=None):
         with app.app_context():
             initialize_database()
 
+    @app.errorhandler(400)
+    def handle_bad_request(error):
+        msg = getattr(error, "description", "Bad Request.")
+        return render_template("upload.html", error=msg), 400
+
+    @app.errorhandler(403)
+    def handle_forbidden(error):
+        msg = getattr(error, "description", "Access Forbidden.")
+        return render_template("upload.html", error=msg), 403
+
+    @app.errorhandler(404)
+    def handle_not_found(_error):
+        return render_template("upload.html", error="The requested resource was not found."), 404
+
+    @app.errorhandler(413)
     @app.errorhandler(RequestEntityTooLarge)
     def handle_file_too_large(_error):
         return (
@@ -105,6 +127,27 @@ def create_app(test_config=None):
                 error=f"The email file is too large. The limit is {app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)} MB.",
             ),
             413,
+        )
+
+    @app.errorhandler(429)
+    def handle_rate_limit_exceeded(_error):
+        return (
+            render_template(
+                "login.html",
+                error="Too many login attempts. Please wait a minute before trying again.",
+            ),
+            429,
+        )
+
+    @app.errorhandler(500)
+    def handle_internal_error(error):
+        app.logger.error("Internal Server Error: %s", error, exc_info=True)
+        return (
+            render_template(
+                "upload.html",
+                error="An internal security exception occurred. Please try your request again.",
+            ),
+            500,
         )
 
     return app

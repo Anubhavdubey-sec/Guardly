@@ -5,15 +5,26 @@
 {% block content %}
 <div class="virustotal-landing-container">
 
-    <!-- Hero Header -->
-    <section class="vt-hero text-center mb-4">
-        <h1 class="vt-hero-title text-white fw-bold mb-3">
-            Analyze suspicious email samples, headers, URLs, and attachments
-            <span class="visually-hidden">Analyze a suspicious message. No account is required.</span>
-        </h1>
-        <p class="vt-hero-subtitle text-muted mx-auto mb-0">
-            Local RFC822 email parser, header authentication (SPF, DKIM, DMARC), URL heuristic inspection, executable attachment detection, and IOC extraction.
-        </p>
+    <!-- Hero Header: PhishGuard Logo & Name -->
+    <section class="vt-hero text-center mb-4 py-2">
+        <div class="d-inline-flex align-items-center justify-content-center gap-3 mb-1">
+            <svg class="pg-logo-svg flex-shrink-0" width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="pgHeroShieldGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#3B82F6"/>
+                  <stop offset="100%" stop-color="#1D4ED8"/>
+                </linearGradient>
+                <linearGradient id="pgHeroGlowGrad" x1="18" y1="0" x2="18" y2="36" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.2"/>
+                </linearGradient>
+              </defs>
+              <path d="M18 3L4 9V17C4 25.5 10 32.2 18 34C26 32.2 32 25.5 32 17V9L18 3Z" fill="url(#pgHeroShieldGrad)" stroke="#60A5FA" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M18 5L6 10.2V17C6 24.3 11.2 30.2 18 31.8C24.8 30.2 30 24.3 30 17V10.2L18 5Z" fill="url(#pgHeroGlowGrad)" opacity="0.3"/>
+              <path d="M13 17.5L16.5 21L23 13.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h1 class="display-5 fw-bold text-white mb-0 font-mono" style="letter-spacing: -0.02em;">PhishGuard</h1>
+        </div>
     </section>
 
     <!-- VirusTotal Iconic Tabbed Card Component -->
@@ -41,32 +52,43 @@
             {% endif %}
 
             <form method="post" enctype="multipart/form-data" id="uploadForm">
-                <div class="vt-upload-dropzone position-relative py-5 px-3 mb-4" id="dropZone">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="vt-upload-dropzone position-relative d-flex flex-column align-items-center justify-content-center py-5 px-4 mb-4 text-center" id="dropZone">
                     <input id="email_file" type="file" name="email_file" accept=".eml,message/rfc822" required aria-describedby="vt-file-terms">
                     
                     <!-- Center Icon Circle -->
-                    <div class="vt-icon-circle mx-auto mb-3">
+                    <div class="vt-icon-circle mb-3">
                         <i class="bi bi-file-earmark-arrow-up-fill text-primary"></i>
                     </div>
 
+                    <!-- Choose File Button Label -->
                     <div class="mb-3">
-                        <label for="email_file" class="btn btn-primary btn-lg px-5 py-3 fw-bold vt-choose-btn">
+                        <span class="btn btn-primary btn-lg px-5 py-3 fw-bold vt-choose-btn">
                             Choose file
-                        </label>
+                        </span>
                     </div>
 
-                    <p class="vt-drag-text text-white fw-semibold mb-1">or drag and drop an email file (.eml)</p>
-                    <p class="text-muted small mb-0" id="fileNameDisplay">Maximum file size 10 MB</p>
+                    <!-- Drag & Drop Label -->
+                    <p class="vt-drag-text text-white fw-semibold mb-2 fs-6">
+                        or drag and drop an email file <code class="text-info bg-dark bg-opacity-50 px-2 py-1 rounded font-mono border border-secondary border-opacity-25">.eml</code>
+                    </p>
+
+                    <!-- Selected File / Max Size Indicator -->
+                    <div class="dropzone-file-meta d-flex align-items-center justify-content-center gap-2">
+                        <span class="text-muted small font-mono" id="fileNameDisplay">
+                            <i class="bi bi-info-circle me-1 text-primary"></i>Maximum file size 10 MB
+                        </span>
+                    </div>
 
                     <!-- Primary Action (Start Analysis CTA - Revealed upon file selection) -->
-                    <div class="text-center pt-3 d-none" id="submitBtnContainer">
+                    <div class="text-center w-100 pt-3 max-w-md d-none" id="submitBtnContainer" style="max-width: 480px;">
                         <button class="btn btn-primary btn-lg px-5 py-3 w-100 fw-bold shadow-sm fade-in-cta" type="submit" id="submitBtn">
                             <i class="bi bi-cpu-fill me-2"></i> Confirm Upload &amp; Start Analysis
                         </button>
                     </div>
 
                     <!-- Progress Bar -->
-                    <div id="uploadProgress" class="upload-progress mt-4 d-none" aria-live="polite">
+                    <div id="uploadProgress" class="upload-progress w-100 mt-4 d-none" aria-live="polite" style="max-width: 480px;">
                         <div class="d-flex justify-content-between small text-muted mb-2 font-mono">
                             <span><i class="bi bi-arrow-repeat spin me-1"></i> Executing threat analysis...</span>
                             <span>Processing</span>
@@ -78,9 +100,13 @@
                 </div>
             </form>
 
-            <p class="vt-terms-text text-muted small font-mono mb-0" id="vt-file-terms">
-                Local processing guaranteed. Files are analyzed strictly on-device without third-party data transfer.
-            </p>
+            <!-- Privacy Notice Container - Cleanly Aligned & Centered with Shield Icon -->
+            <div class="vt-privacy-notice text-center mx-auto" style="max-width: 680px;">
+                <p class="vt-terms-text text-muted small font-mono mb-0 d-inline-flex align-items-center justify-content-center gap-2 flex-wrap" id="vt-file-terms">
+                    <i class="bi bi-shield-lock-fill text-success fs-6"></i>
+                    <span><strong>Local processing guaranteed:</strong> Files are analyzed strictly on-device without third-party data transfer.</span>
+                </p>
+            </div>
         </div>
 
         <!-- Tab 2 Content: URL INSPECTION -->
@@ -88,14 +114,14 @@
             <div class="vt-icon-circle mx-auto mb-3">
                 <i class="bi bi-globe2 text-primary"></i>
             </div>
-            <h2 class="text-white fs-5 fw-bold mb-3">Search or scan a URL</h2>
+            <h2 class="text-white fs-5 fw-bold mb-3 text-center">Search or scan a URL</h2>
             <div class="vt-input-group mx-auto mb-4" style="max-width: 600px;">
                 <div class="input-group input-group-lg">
                     <input type="text" class="form-control font-mono fs-6 bg-dark text-white border-secondary" placeholder="http://example.com/phishing-link" id="vtUrlInput">
                     <button class="btn btn-primary px-4" type="button" onclick="scanVtUrl()"><i class="bi bi-search me-1"></i> Scan</button>
                 </div>
             </div>
-            <p class="vt-terms-text text-muted small font-mono mb-0">
+            <p class="vt-terms-text text-muted small font-mono mb-0 d-block text-center mx-auto" style="max-width: 600px; text-align: center !important;">
                 Inspect suspicious links for IP-based hosts, HTTP live status, brand impersonation, and domain entropy.
             </p>
         </div>
@@ -105,14 +131,14 @@
             <div class="vt-icon-circle mx-auto mb-3">
                 <i class="bi bi-search text-primary"></i>
             </div>
-            <h2 class="text-white fs-5 fw-bold mb-3">Search IP address, Domain, or File Hash</h2>
+            <h2 class="text-white fs-5 fw-bold mb-3 text-center">Search IP address, Domain, or File Hash</h2>
             <div class="vt-input-group mx-auto mb-4" style="max-width: 600px;">
                 <div class="input-group input-group-lg">
                     <input type="text" class="form-control font-mono fs-6 bg-dark text-white border-secondary" placeholder="IP, Domain, MD5, SHA-256..." id="vtSearchInput">
                     <button class="btn btn-primary px-4" type="button" onclick="searchVtIoc()"><i class="bi bi-search me-1"></i> Search</button>
                 </div>
             </div>
-            <p class="vt-terms-text text-muted small font-mono mb-0">
+            <p class="vt-terms-text text-muted small font-mono mb-0 d-block text-center mx-auto" style="max-width: 600px; text-align: center !important;">
                 Query local threat intelligence records and IP Geolocation metadata from past email investigations.
             </p>
         </div>
@@ -168,25 +194,6 @@
         </div>
     </section>
 
-    <!-- Local System Capabilities Bar -->
-    <section class="vt-feature-box p-4 mb-4 text-center">
-        <div class="d-flex flex-wrap align-items-center justify-content-around gap-4 font-mono">
-            <div>
-                <span class="d-block text-muted small">ANALYSIS LATENCY</span>
-                <strong class="text-info fs-5">&lt; 300 ms</strong>
-            </div>
-            <div class="metric-divider d-none d-md-block"></div>
-            <div>
-                <span class="d-block text-muted small">PRIVACY MODE</span>
-                <strong class="text-success fs-5">100% Offline Processing</strong>
-            </div>
-            <div class="metric-divider d-none d-md-block"></div>
-            <div>
-                <span class="d-block text-muted small">RULE ENGINE</span>
-                <strong class="text-primary fs-5">Local Deterministic Rules</strong>
-            </div>
-        </div>
-    </section>
 </div>
 
 <script>
@@ -266,10 +273,12 @@
         if (fileInput && fileNameDisplay) {
             fileInput.addEventListener('change', () => {
                 if (fileInput.files.length > 0) {
-                    fileNameDisplay.textContent = `${fileInput.files[0].name} (${(fileInput.files[0].size / 1024).toFixed(1)} KB)`;
-                    fileNameDisplay.classList.add('text-primary', 'fw-bold');
+                    fileNameDisplay.innerHTML = `<i class="bi bi-file-earmark-check-fill me-1 text-success fs-6"></i> <span class="text-white">${fileInput.files[0].name}</span> <span class="text-info">(${(fileInput.files[0].size / 1024).toFixed(1)} KB)</span>`;
+                    fileNameDisplay.classList.remove('text-muted');
                     submitBtnContainer?.classList.remove('d-none');
                 } else {
+                    fileNameDisplay.innerHTML = `<i class="bi bi-info-circle me-1 text-primary"></i>Maximum file size 10 MB`;
+                    fileNameDisplay.classList.add('text-muted');
                     submitBtnContainer?.classList.add('d-none');
                 }
             });

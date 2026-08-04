@@ -9,6 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('phishguard-theme');
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+                document.documentElement.classList.add('light-mode');
+            } else {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                document.documentElement.classList.remove('light-mode');
+            }
+        })();
+    </script>
 </head>
 <body class="soc-body">
     <!-- Initial Page Open Animated Logo Splash Screen -->
@@ -20,8 +32,7 @@
                     <i class="bi bi-shield-check"></i>
                 </div>
             </div>
-            <h1 class="splash-brand-title font-mono fw-bold mb-1">PhishGuard</h1>
-            <p class="splash-subtitle font-mono text-muted small mb-3">OFFLINE ENTERPRISE EMAIL DEFENSE</p>
+            <h1 class="splash-brand-title font-mono fw-bold mb-3">PhishGuard</h1>
             <div class="splash-progress-bar mx-auto">
                 <div class="splash-progress-fill"></div>
             </div>
@@ -39,11 +50,25 @@
             <div class="public-wrapper w-100">
                 <header class="public-navbar">
                     <div class="d-flex align-items-center justify-content-between page-container" style="height: 72px;">
-                        <a href="{{ url_for('scanner.upload') }}" class="brand-logo text-decoration-none d-flex align-items-center gap-2">
-                            <div class="brand-icon-wrapper">
-                                <i class="bi bi-shield-check text-primary fs-5"></i>
+                        <a href="{{ url_for('scanner.upload') }}" class="brand-logo text-decoration-none d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
+                            <div class="brand-icon-wrapper flex-shrink-0">
+                                <svg class="pg-logo-svg" width="32" height="32" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <defs>
+                                    <linearGradient id="pgShieldGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                                      <stop offset="0%" stop-color="#3B82F6"/>
+                                      <stop offset="100%" stop-color="#1D4ED8"/>
+                                    </linearGradient>
+                                    <linearGradient id="pgGlowGrad" x1="18" y1="0" x2="18" y2="36" gradientUnits="userSpaceOnUse">
+                                      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.8"/>
+                                      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.2"/>
+                                    </linearGradient>
+                                  </defs>
+                                  <path d="M18 3L4 9V17C4 25.5 10 32.2 18 34C26 32.2 32 25.5 32 17V9L18 3Z" fill="url(#pgShieldGrad)" stroke="#60A5FA" stroke-width="1.5" stroke-linejoin="round"/>
+                                  <path d="M18 5L6 10.2V17C6 24.3 11.2 30.2 18 31.8C24.8 30.2 30 24.3 30 17V10.2L18 5Z" fill="url(#pgGlowGrad)" opacity="0.3"/>
+                                  <path d="M13 17.5L16.5 21L23 13.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
                             </div>
-                            <span class="fw-bold text-white fs-5">PhishGuard <span class="badge bg-primary-subtle text-primary font-mono ms-1" style="font-size: 0.65rem; letter-spacing: 0.08em;">LOCAL ANALYSIS ENGINE</span></span>
+                            <span class="fw-bold text-white fs-5 text-nowrap">PhishGuard <span class="badge bg-primary-subtle text-primary font-mono ms-1 d-none d-sm-inline-block" style="font-size: 0.65rem; letter-spacing: 0.08em;">LOCAL ANALYSIS ENGINE</span></span>
                         </a>
                         <div class="public-nav-actions d-flex align-items-center gap-2">
                             <a href="{{ url_for('scanner.upload') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-radar me-1"></i> Scan Email</a>
@@ -52,6 +77,9 @@
                             {% else %}
                                 <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-light">Staff Login</a>
                             {% endif %}
+                            <button class="btn btn-sm btn-outline-light theme-toggle-btn ms-1" type="button" title="Switch Theme" aria-label="Toggle theme">
+                                <i class="bi bi-sun-fill"></i>
+                            </button>
                         </div>
                     </div>
                 </header>
@@ -80,21 +108,30 @@
             const toggle = document.getElementById('sidebarToggle');
             const collapseToggle = document.getElementById('sidebarCollapse');
             const sidebar = document.getElementById('socSidebar');
-            const themeToggle = document.getElementById('themeToggle');
+            
             const applyTheme = (theme) => {
                 const isLight = theme === 'light';
                 document.body.classList.toggle('light-mode', isLight);
-                document.documentElement.dataset.bsTheme = isLight ? 'light' : 'dark';
-                themeToggle?.setAttribute('aria-pressed', String(isLight));
-                themeToggle?.setAttribute('title', isLight ? 'Use dark mode' : 'Use light mode');
-                const icon = themeToggle?.querySelector('i');
-                if (icon) icon.className = isLight ? 'bi bi-moon-stars' : 'bi bi-sun';
+                document.documentElement.classList.toggle('light-mode', isLight);
+                document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
+                localStorage.setItem('phishguard-theme', isLight ? 'light' : 'dark');
+
+                document.querySelectorAll('#themeToggle, .theme-toggle-btn').forEach(btn => {
+                    btn.setAttribute('aria-pressed', String(isLight));
+                    btn.setAttribute('title', isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isLight ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+                    }
+                });
             };
+
             const setSidebarState = (collapsed) => {
                 document.body.classList.toggle('sidebar-collapsed', collapsed);
                 collapseToggle?.setAttribute('aria-expanded', String(!collapsed));
                 localStorage.setItem('phishguard-sidebar-collapsed', String(collapsed));
             };
+
             if (localStorage.getItem('phishguard-sidebar-collapsed') === 'true' && window.innerWidth >= 992) {
                 setSidebarState(true);
             }
@@ -104,20 +141,29 @@
                     sidebar.classList.toggle('show');
                 });
             }
-            if (localStorage.getItem('phishguard-theme') === 'light') applyTheme('light');
-            themeToggle?.addEventListener('click', () => {
-                const nextTheme = document.body.classList.contains('light-mode') ? 'dark' : 'light';
-                applyTheme(nextTheme);
-                localStorage.setItem('phishguard-theme', nextTheme);
+
+            const currentSavedTheme = localStorage.getItem('phishguard-theme') || 'dark';
+            applyTheme(currentSavedTheme);
+
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('#themeToggle, .theme-toggle-btn');
+                if (btn) {
+                    const isNowLight = document.body.classList.contains('light-mode');
+                    const nextTheme = isNowLight ? 'dark' : 'light';
+                    applyTheme(nextTheme);
+                }
             });
 
-            // Smooth animated logo splash dismiss on page open
+            // Smooth animated logo splash dismiss on page open without text ghosting
             const splash = document.getElementById('phishguardSplash');
             if (splash) {
                 setTimeout(() => {
                     splash.classList.add('fade-out');
-                    setTimeout(() => splash.remove(), 650);
-                }, 1000);
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                        splash.remove();
+                    }, 350);
+                }, 400);
             }
         });
     </script>

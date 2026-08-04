@@ -18,7 +18,7 @@ class DatabaseConfigTests(unittest.TestCase):
         self.app = create_app({
             "TESTING": True,
             "SECRET_KEY": "test-secret",
-            "SQLALCHEMY_DATABASE_URI": f"sqlite:///{root}/test.db",
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
             "UPLOAD_FOLDER": os.path.join(self.temp_directory.name, "uploads"),
         })
 
