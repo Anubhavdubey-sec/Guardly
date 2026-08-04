@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}URL Scan Report - {{ analysis.domain }}{% endblock %}
+
+{% block content %}
+<div class="virustotal-landing-container py-3">
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary font-mono"><i class="bi bi-globe2 me-1"></i> URL ANALYSIS</span>
+                <span class="text-muted font-mono small">Target URL Live Telemetry</span>
+            </div>
+            <h1 class="text-white fw-bold fs-3 mb-0 font-mono text-break">{{ analysis.target_url }}</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('scanner.scan_url', url=analysis.target_url, format='json') }}" target="_blank" class="btn btn-outline-info btn-sm font-mono">
+                <i class="bi bi-filetype-json me-1"></i> Export JSON
+            </a>
+            <a href="{{ url_for('scanner.upload') }}" class="btn btn-outline-light btn-sm font-mono">
+                <i class="bi bi-arrow-left me-1"></i> New Scan
+            </a>
+        </div>
+    </div>
+
+    <!-- Security Warnings / Brand Impersonation Alert Banner -->
+    {% if analysis.brand_impersonation %}
+        <div class="alert alert-danger font-mono d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
+            <div>
+                <strong class="d-block text-uppercase">Brand Impersonation Threat Detected!</strong>
+                <span>This domain attempts to mimic <strong>{{ analysis.brand_impersonation }}</strong> credential portals or login services.</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Overview Verdict & Live HTTP Response Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="soc-card p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+                {% if analysis.verdict == "Clean" %}
+                    <div class="display-3 text-success mb-2"><i class="bi bi-shield-check"></i></div>
+                    <h2 class="text-success fw-bold fs-3 mb-1">CLEAN</h2>
+                    <p class="text-muted small mb-0 font-mono">0 / {{ analysis.total_vendors }} Security Engines Flagged Threats</p>
+                {% elif analysis.verdict == "Suspicious" %}
+                    <div class="display-3 text-warning mb-2"><i class="bi bi-shield-exclamation"></i></div>
+                    <h2 class="text-warning fw-bold fs-3 mb-1">SUSPICIOUS</h2>
+                    <p class="text-muted small mb-0 font-mono">{{ analysis.malicious_count }} / {{ analysis.total_vendors }} Security Engines Flagged Anomalies</p>
+                {% else %}
+                    <div class="display-3 text-danger mb-2"><i class="bi bi-shield-x"></i></div>
+                    <h2 class="text-danger fw-bold fs-3 mb-1">MALICIOUS</h2>
+                    <p class="text-muted small mb-0 font-mono">{{ analysis.malicious_count }} / {{ analysis.total_vendors }} Security Engines Flagged Threats</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="soc-card p-4 h-100">
+                <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+                    <i class="bi bi-hdd-network me-2 text-primary"></i>Live HTTP Telemetry &amp; Network Context
+                </h3>
+                <div class="row g-3 font-mono small">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">HTTP STATUS CODE</span>
+                        <strong class="text-white fs-6">{{ analysis.http_status }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">RESPONSE LATENCY</span>
+                        <strong class="text-info fs-6">
+                            {% if analysis.response_ms > 0 %}{{ analysis.response_ms }} ms{% else %}N/A{% endif %}
+                        </strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">SERVER BANNER</span>
+                        <strong class="text-white fs-6">{{ analysis.server_banner }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">CONTENT-TYPE</span>
+                        <strong class="text-white fs-6">{{ analysis.content_type }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">DOMAIN ENTROPY</span>
+                        <strong class="text-warning fs-6">{{ analysis.domain_entropy }} bits</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">IP HOST DANGER</span>
+                        <strong class="{% if analysis.is_ip %}text-danger{% else %}text-success{% endif %} fs-6">
+                            {% if analysis.is_ip %}IP-based URL Host{% else %}Valid Domain Host{% endif %}
+                        </strong>
+                    </div>
+                    {% if analysis.ip_location %}
+                    <div class="col-sm-12 pt-2 border-top border-secondary border-opacity-25 mt-2">
+                        <span class="text-muted d-block">SERVER IP GEOLOCATION</span>
+                        <strong class="text-info fs-6">
+                            {{ analysis.ip_location.flag }} {{ analysis.ip_location.city }}, {{ analysis.ip_location.country }} ({{ analysis.ip_location.org }})
+                        </strong>
+                        <span class="text-muted small ms-2 font-mono">[{{ analysis.ip_location.ip }}]</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cryptographic Hashes Bar -->
+    <div class="soc-card p-4 mb-4">
+        <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+            <i class="bi bi-fingerprint me-2 text-primary"></i>URL Cryptographic Hashes
+        </h3>
+        <div class="row g-3 font-mono small">
+            <div class="col-md-4">
+                <span class="text-muted d-block">MD5</span>
+                <code class="text-info user-select-all text-break">{{ analysis.md5_hash }}</code>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block">SHA-1</span>
+                <code class="text-info user-select-all text-break">{{ analysis.sha1_hash }}</code>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block">SHA-256</span>
+                <code class="text-info user-select-all text-break">{{ analysis.sha256_hash }}</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local Rule Detection Grid -->
+    <div class="soc-card p-4 mb-4">
+        <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+            <i class="bi bi-cpu me-2 text-primary"></i>Local Heuristic &amp; Inspection Rule Modules
+        </h3>
+        <div class="row g-3 font-mono small">
+            {% for vendor in analysis.vendors %}
+                <div class="col-md-4 col-sm-6">
+                    <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 d-flex align-items-center justify-content-between">
+                        <span class="text-white font-weight-bold">{{ vendor.name }}</span>
+                        <span class="badge {% if vendor.result == 'Passed' %}bg-success bg-opacity-25 text-success{% elif vendor.result == 'Notice' %}bg-info bg-opacity-25 text-info{% else %}bg-warning bg-opacity-25 text-warning{% endif %} border border-secondary border-opacity-25">
+                            <i class="{{ vendor.icon }} me-1"></i> {{ vendor.result }}
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

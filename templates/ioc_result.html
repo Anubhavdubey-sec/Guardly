@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}IOC Threat Intelligence - {{ analysis.query }}{% endblock %}
+
+{% block content %}
+<div class="virustotal-landing-container py-3">
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-info text-dark font-mono"><i class="bi bi-search me-1"></i> IOC SEARCH</span>
+                <span class="text-muted font-mono small">{{ analysis.ioc_type }}</span>
+            </div>
+            <h1 class="text-white fw-bold fs-3 mb-0 font-mono text-break">{{ analysis.query }}</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('scanner.scan_ioc', q=analysis.query, format='json') }}" target="_blank" class="btn btn-outline-info btn-sm font-mono">
+                <i class="bi bi-filetype-json me-1"></i> Export JSON
+            </a>
+            <a href="{{ url_for('scanner.upload') }}" class="btn btn-outline-light btn-sm font-mono">
+                <i class="bi bi-arrow-left me-1"></i> New Search
+            </a>
+        </div>
+    </div>
+
+    <!-- Overview Verdict Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="soc-card p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+                {% if analysis.matches_count == 0 %}
+                    <div class="display-3 text-success mb-2"><i class="bi bi-shield-check"></i></div>
+                    <h2 class="text-success fw-bold fs-3 mb-1">NO THREAT RECORDED</h2>
+                    <p class="text-muted small mb-0 font-mono">No historical threat telemetry matches found</p>
+                {% else %}
+                    <div class="display-3 text-warning mb-2"><i class="bi bi-exclamation-triangle"></i></div>
+                    <h2 class="text-warning fw-bold fs-3 mb-1">THREAT DETECTED</h2>
+                    <p class="text-muted small mb-0 font-mono">{{ analysis.matches_count }} Related Scan Records Found</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="soc-card p-4 h-100">
+                <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>IOC Details &amp; Threat Metadata
+                </h3>
+                <div class="row g-3 font-mono small">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">QUERY ARTIFACT</span>
+                        <strong class="text-white fs-6 text-break">{{ analysis.query }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">CLASSIFICATION</span>
+                        <strong class="text-info fs-6">{{ analysis.ioc_type }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">REPUTATION SCORE</span>
+                        <strong class="{% if analysis.matches_count > 0 %}text-warning{% else %}text-success{% endif %} fs-6">
+                            {{ analysis.reputation_score }} / 100
+                        </strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">CHARACTER ENTROPY</span>
+                        <strong class="text-warning fs-6">{{ analysis.domain_entropy }} bits</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">PRIVATE IP SUBNET</span>
+                        <strong class="{% if analysis.is_private_ip %}text-warning{% else %}text-white{% endif %} fs-6">
+                            {% if analysis.is_private_ip %}YES (Internal / Private Subnet){% else %}NO (Public Internet Address){% endif %}
+                        </strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">HISTORICAL INCIDENTS</span>
+                        <strong class="text-white fs-6">{{ analysis.matches_count }} Incidents</strong>
+                    </div>
+                    {% if analysis.ip_location %}
+                    <div class="col-sm-12 pt-2 border-top border-secondary border-opacity-25 mt-2">
+                        <span class="text-muted d-block">IP GEOLOCATION &amp; REGISTRAR CONTEXT</span>
+                        <strong class="text-info fs-6">
+                            {{ analysis.ip_location.flag }} {{ analysis.ip_location.city }}, {{ analysis.ip_location.country }} ({{ analysis.ip_location.org }})
+                        </strong>
+                        <span class="text-muted small ms-2 font-mono">[{{ analysis.ip_location.ip }}]</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cryptographic Hashes Bar -->
+    <div class="soc-card p-4 mb-4">
+        <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+            <i class="bi bi-fingerprint me-2 text-primary"></i>Artifact Cryptographic Hashes
+        </h3>
+        <div class="row g-3 font-mono small">
+            <div class="col-md-4">
+                <span class="text-muted d-block">MD5</span>
+                <code class="text-info user-select-all text-break">{{ analysis.md5_hash }}</code>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block">SHA-1</span>
+                <code class="text-info user-select-all text-break">{{ analysis.sha1_hash }}</code>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block">SHA-256</span>
+                <code class="text-info user-select-all text-break">{{ analysis.sha256_hash }}</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Email Scan Incidents Grid -->
+    <div class="soc-card p-4 mb-4">
+        <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+            <i class="bi bi-journal-text me-2 text-primary"></i>Related Telemetry Incidents ({{ analysis.matches_count }})
+        </h3>
+        {% if analysis.matching_scans %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover font-mono align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted small">
+                            <th>Scan ID</th>
+                            <th>Subject</th>
+                            <th>Sender</th>
+                            <th>Verdict</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scan in analysis.matching_scans %}
+                            <tr>
+                                <td>#{{ scan.id }}</td>
+                                <td class="text-white">{{ scan.subject }}</td>
+                                <td>{{ scan.sender }}</td>
+                                <td>
+                                    <span class="badge {% if scan.verdict == 'Low Risk' %}bg-success{% elif scan.verdict == 'Medium Risk' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ scan.verdict }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small">{{ scan.scan_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-muted font-mono">
+                <i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>
+                No historical incidents found matching this IOC in local threat records.
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

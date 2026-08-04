@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PhishGuard - Offline Enterprise Email Investigation Platform{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="soc-body">
+    <!-- Initial Page Open Animated Logo Splash Screen -->
+    <div id="phishguardSplash" class="splash-screen-overlay" aria-hidden="true">
+        <div class="splash-content text-center">
+            <div class="splash-logo-wrapper mb-3">
+                <div class="splash-radar-ring"></div>
+                <div class="splash-shield-orb">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+            </div>
+            <h1 class="splash-brand-title font-mono fw-bold mb-1">PhishGuard</h1>
+            <p class="splash-subtitle font-mono text-muted small mb-3">OFFLINE ENTERPRISE EMAIL DEFENSE</p>
+            <div class="splash-progress-bar mx-auto">
+                <div class="splash-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="soc-layout">
+        {% if current_user and current_user.role in ['admin', 'analyst'] %}
+            {% include "partials/sidebar.html" %}
+            <div class="soc-main-wrapper">
+                {% include "partials/topbar.html" %}
+                <main id="main-content" class="soc-content page-container py-4">
+        {% else %}
+            <div class="public-wrapper w-100">
+                <header class="public-navbar">
+                    <div class="d-flex align-items-center justify-content-between page-container" style="height: 72px;">
+                        <a href="{{ url_for('scanner.upload') }}" class="brand-logo text-decoration-none d-flex align-items-center gap-2">
+                            <div class="brand-icon-wrapper">
+                                <i class="bi bi-shield-check text-primary fs-5"></i>
+                            </div>
+                            <span class="fw-bold text-white fs-5">PhishGuard <span class="badge bg-primary-subtle text-primary font-mono ms-1" style="font-size: 0.65rem; letter-spacing: 0.08em;">LOCAL ANALYSIS ENGINE</span></span>
+                        </a>
+                        <div class="public-nav-actions d-flex align-items-center gap-2">
+                            <a href="{{ url_for('scanner.upload') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-radar me-1"></i> Scan Email</a>
+                            {% if current_user %}
+                                <a href="{{ url_for('auth.dashboard') }}" class="btn btn-sm btn-outline-light">Dashboard</a>
+                            {% else %}
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-light">Staff Login</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </header>
+                <main id="main-content" class="public-content page-container py-4">
+        {% endif %}
+
+        {% include "partials/flash_messages.html" %}
+        {% block content %}{% endblock %}
+
+        </main>
+        {% if current_user and current_user.role in ['admin', 'analyst'] %}
+            </div>
+        {% else %}
+            <footer class="public-footer py-3">
+                <div class="d-flex justify-content-between gap-3 page-container">
+                    <span><i class="bi bi-shield-lock me-1"></i> PhishGuard Email Defense</span>
+                    <span>Uploaded files are removed after analysis.</span>
+                </div>
+            </footer>
+            </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('sidebarToggle');
+            const collapseToggle = document.getElementById('sidebarCollapse');
+            const sidebar = document.getElementById('socSidebar');
+            const themeToggle = document.getElementById('themeToggle');
+            const applyTheme = (theme) => {
+                const isLight = theme === 'light';
+                document.body.classList.toggle('light-mode', isLight);
+                document.documentElement.dataset.bsTheme = isLight ? 'light' : 'dark';
+                themeToggle?.setAttribute('aria-pressed', String(isLight));
+                themeToggle?.setAttribute('title', isLight ? 'Use dark mode' : 'Use light mode');
+                const icon = themeToggle?.querySelector('i');
+                if (icon) icon.className = isLight ? 'bi bi-moon-stars' : 'bi bi-sun';
+            };
+            const setSidebarState = (collapsed) => {
+                document.body.classList.toggle('sidebar-collapsed', collapsed);
+                collapseToggle?.setAttribute('aria-expanded', String(!collapsed));
+                localStorage.setItem('phishguard-sidebar-collapsed', String(collapsed));
+            };
+            if (localStorage.getItem('phishguard-sidebar-collapsed') === 'true' && window.innerWidth >= 992) {
+                setSidebarState(true);
+            }
+            collapseToggle?.addEventListener('click', () => setSidebarState(!document.body.classList.contains('sidebar-collapsed')));
+            if (toggle && sidebar) {
+                toggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('show');
+                });
+            }
+            if (localStorage.getItem('phishguard-theme') === 'light') applyTheme('light');
+            themeToggle?.addEventListener('click', () => {
+                const nextTheme = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+                applyTheme(nextTheme);
+                localStorage.setItem('phishguard-theme', nextTheme);
+            });
+
+            // Smooth animated logo splash dismiss on page open
+            const splash = document.getElementById('phishguardSplash');
+            if (splash) {
+                setTimeout(() => {
+                    splash.classList.add('fade-out');
+                    setTimeout(() => splash.remove(), 650);
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}SOC Staff Portal Authentication - PhishGuard Enterprise XDR{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper py-5">
+    <div class="auth-card mx-auto p-4 p-md-5">
+        <div class="text-center mb-4">
+            <div class="auth-brand-orb mx-auto mb-3">
+                <i class="bi bi-shield-lock-fill text-info display-6"></i>
+            </div>
+            <h1 class="h3 fw-bold text-white mb-1">Security Operations Center Portal</h1>
+            <p class="text-muted small mb-0 font-mono">AUTHENTICATE CREDENTIALS TO ACCESS TELEMETRY</p>
+        </div>
+        <form method="post">
+            <div class="mb-3">
+                <label for="email" class="form-label text-muted small">Corporate Email Address</label>
+                <div class="position-relative">
+                    <i class="bi bi-envelope position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="email" id="email" name="email" class="form-control ps-5" placeholder="analyst@enterprise.sec" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="form-label text-muted small">Secure Password</label>
+                <div class="position-relative">
+                    <i class="bi bi-key position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="password" id="password" name="password" class="form-control ps-5" placeholder="••••••••••••" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2.5 shadow">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Authenticate Credentials
+            </button>
+        </form>
+        <div class="mt-4 pt-3 border-top border-secondary border-opacity-20 text-center">
+            <p class="text-muted small mb-0"><i class="bi bi-info-circle text-info me-1"></i> Public email scans do not require an account. <a href="{{ url_for('scanner.upload') }}" class="text-info text-decoration-none fw-semibold">Open Scanner</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

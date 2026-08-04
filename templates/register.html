@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Public Threat Scanner - PhishGuard Enterprise XDR{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper py-5">
+    <div class="auth-card mx-auto p-4 p-md-5 text-center">
+        <div class="auth-brand-orb mx-auto mb-3">
+            <i class="bi bi-radar text-info display-6"></i>
+        </div>
+        <h1 class="h3 fw-bold text-white mb-2">Public Telemetry Portal</h1>
+        <p class="text-muted small mb-4">No account registration is required to utilize the public email threat scanner engine.</p>
+        <a href="{{ url_for('scanner.upload') }}" class="btn btn-primary w-100 py-2.5 shadow">
+            <i class="bi bi-shield-check me-1"></i> Initiate Email Analysis
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}PhishGuard - Email Threat Scanner &amp; Threat Intelligence{% endblock %}
+
+{% block content %}
+<div class="virustotal-landing-container">
+
+    <!-- Hero Header -->
+    <section class="vt-hero text-center mb-4">
+        <h1 class="vt-hero-title text-white fw-bold mb-3">
+            Analyze suspicious email samples, headers, URLs, and attachments
+            <span class="visually-hidden">Analyze a suspicious message. No account is required.</span>
+        </h1>
+        <p class="vt-hero-subtitle text-muted mx-auto mb-0">
+            Local RFC822 email parser, header authentication (SPF, DKIM, DMARC), URL heuristic inspection, executable attachment detection, and IOC extraction.
+        </p>
+    </section>
+
+    <!-- VirusTotal Iconic Tabbed Card Component -->
+    <section class="vt-card mx-auto mb-5">
+        <!-- VirusTotal 3 Navigation Tabs: FILE | URL | SEARCH -->
+        <div class="vt-tabs d-flex align-items-center justify-content-center border-bottom border-secondary border-opacity-25">
+            <button type="button" class="vt-tab-btn active" id="tabFileBtn" onclick="switchVtTab('file')">
+                <i class="bi bi-file-earmark-arrow-up me-2"></i>FILE
+            </button>
+            <button type="button" class="vt-tab-btn" id="tabUrlBtn" onclick="switchVtTab('url')">
+                <i class="bi bi-link-45deg me-2"></i>URL
+            </button>
+            <button type="button" class="vt-tab-btn" id="tabSearchBtn" onclick="switchVtTab('search')">
+                <i class="bi bi-search me-2"></i>SEARCH
+            </button>
+        </div>
+
+        <!-- Tab 1 Content: FILE UPLOAD (Default Active) -->
+        <div class="vt-tab-pane p-4 p-md-5 text-center" id="paneFile">
+            {% if error %}
+                <div class="soc-alert soc-alert-danger mb-4 d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                    <span>{{ error }}</span>
+                </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                <div class="vt-upload-dropzone position-relative py-5 px-3 mb-4" id="dropZone">
+                    <input id="email_file" type="file" name="email_file" accept=".eml,message/rfc822" required aria-describedby="vt-file-terms">
+                    
+                    <!-- Center Icon Circle -->
+                    <div class="vt-icon-circle mx-auto mb-3">
+                        <i class="bi bi-file-earmark-arrow-up-fill text-primary"></i>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email_file" class="btn btn-primary btn-lg px-5 py-3 fw-bold vt-choose-btn">
+                            Choose file
+                        </label>
+                    </div>
+
+                    <p class="vt-drag-text text-white fw-semibold mb-1">or drag and drop an email file (.eml)</p>
+                    <p class="text-muted small mb-0" id="fileNameDisplay">Maximum file size 10 MB</p>
+
+                    <!-- Primary Action (Start Analysis CTA - Revealed upon file selection) -->
+                    <div class="text-center pt-3 d-none" id="submitBtnContainer">
+                        <button class="btn btn-primary btn-lg px-5 py-3 w-100 fw-bold shadow-sm fade-in-cta" type="submit" id="submitBtn">
+                            <i class="bi bi-cpu-fill me-2"></i> Confirm Upload &amp; Start Analysis
+                        </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="uploadProgress" class="upload-progress mt-4 d-none" aria-live="polite">
+                        <div class="d-flex justify-content-between small text-muted mb-2 font-mono">
+                            <span><i class="bi bi-arrow-repeat spin me-1"></i> Executing threat analysis...</span>
+                            <span>Processing</span>
+                        </div>
+                        <div class="progress" role="progressbar" style="height: 6px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <p class="vt-terms-text text-muted small font-mono mb-0" id="vt-file-terms">
+                Local processing guaranteed. Files are analyzed strictly on-device without third-party data transfer.
+            </p>
+        </div>
+
+        <!-- Tab 2 Content: URL INSPECTION -->
+        <div class="vt-tab-pane p-4 p-md-5 text-center d-none" id="paneUrl">
+            <div class="vt-icon-circle mx-auto mb-3">
+                <i class="bi bi-globe2 text-primary"></i>
+            </div>
+            <h2 class="text-white fs-5 fw-bold mb-3">Search or scan a URL</h2>
+            <div class="vt-input-group mx-auto mb-4" style="max-width: 600px;">
+                <div class="input-group input-group-lg">
+                    <input type="text" class="form-control font-mono fs-6 bg-dark text-white border-secondary" placeholder="http://example.com/phishing-link" id="vtUrlInput">
+                    <button class="btn btn-primary px-4" type="button" onclick="scanVtUrl()"><i class="bi bi-search me-1"></i> Scan</button>
+                </div>
+            </div>
+            <p class="vt-terms-text text-muted small font-mono mb-0">
+                Inspect suspicious links for IP-based hosts, HTTP live status, brand impersonation, and domain entropy.
+            </p>
+        </div>
+
+        <!-- Tab 3 Content: SEARCH IOC -->
+        <div class="vt-tab-pane p-4 p-md-5 text-center d-none" id="paneSearch">
+            <div class="vt-icon-circle mx-auto mb-3">
+                <i class="bi bi-search text-primary"></i>
+            </div>
+            <h2 class="text-white fs-5 fw-bold mb-3">Search IP address, Domain, or File Hash</h2>
+            <div class="vt-input-group mx-auto mb-4" style="max-width: 600px;">
+                <div class="input-group input-group-lg">
+                    <input type="text" class="form-control font-mono fs-6 bg-dark text-white border-secondary" placeholder="IP, Domain, MD5, SHA-256..." id="vtSearchInput">
+                    <button class="btn btn-primary px-4" type="button" onclick="searchVtIoc()"><i class="bi bi-search me-1"></i> Search</button>
+                </div>
+            </div>
+            <p class="vt-terms-text text-muted small font-mono mb-0">
+                Query local threat intelligence records and IP Geolocation metadata from past email investigations.
+            </p>
+        </div>
+    </section>
+
+    <!-- Local System Capability Chips -->
+    <section class="vt-feature-box p-4 mb-4">
+        <h3 class="text-white fs-6 fw-bold mb-3 font-mono text-center">
+            <i class="bi bi-cpu-fill text-info me-2"></i>ENGINE CAPABILITIES &amp; LOCAL MODULES
+        </h3>
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 font-mono small">
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>RFC822 Parsing</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Header Analysis</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>MIME Analysis</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>SPF Validation</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>DKIM Validation</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>DMARC Validation</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Sender Verification</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>URL Inspection</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Attachment Analysis</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>IOC Extraction</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Risk Scoring</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Security Verdict</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Local Processing</span>
+            <span class="badge bg-dark text-info border border-info border-opacity-25 px-3 py-2"><i class="bi bi-check2-circle me-1 text-success"></i>Privacy First</span>
+        </div>
+    </section>
+
+    <!-- Local Features Grid -->
+    <section class="vt-feature-grid mb-5">
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <div class="vt-feature-box p-4 h-100">
+                    <div class="vt-feat-icon mb-3"><i class="bi bi-shield-check text-primary fs-3"></i></div>
+                    <h3 class="text-white fs-6 fw-bold mb-2">Header &amp; Auth Engine</h3>
+                    <p class="text-muted small mb-0">SPF, DKIM, and DMARC alignment validation with Reply-To mismatch detection.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="vt-feature-box p-4 h-100">
+                    <div class="vt-feat-icon mb-3"><i class="bi bi-cpu text-primary fs-3"></i></div>
+                    <h3 class="text-white fs-6 fw-bold mb-2">URL Heuristic Engine</h3>
+                    <p class="text-muted small mb-0">Deep link extraction, IP-based host detection, brand impersonation flags, and HTTP telemetry.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="vt-feature-box p-4 h-100">
+                    <div class="vt-feat-icon mb-3"><i class="bi bi-file-earmark-code text-primary fs-3"></i></div>
+                    <h3 class="text-white fs-6 fw-bold mb-2">Executable &amp; IOC Detector</h3>
+                    <p class="text-muted small mb-0">Instant detection of dangerous attachments (.exe, .vbs, .js, .ps1) and IP/Domain IOC extraction.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Local System Capabilities Bar -->
+    <section class="vt-feature-box p-4 mb-4 text-center">
+        <div class="d-flex flex-wrap align-items-center justify-content-around gap-4 font-mono">
+            <div>
+                <span class="d-block text-muted small">ANALYSIS LATENCY</span>
+                <strong class="text-info fs-5">&lt; 300 ms</strong>
+            </div>
+            <div class="metric-divider d-none d-md-block"></div>
+            <div>
+                <span class="d-block text-muted small">PRIVACY MODE</span>
+                <strong class="text-success fs-5">100% Offline Processing</strong>
+            </div>
+            <div class="metric-divider d-none d-md-block"></div>
+            <div>
+                <span class="d-block text-muted small">RULE ENGINE</span>
+                <strong class="text-primary fs-5">Local Deterministic Rules</strong>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    function switchVtTab(tabName) {
+        document.querySelectorAll('.vt-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.vt-tab-pane').forEach(pane => pane.classList.add('d-none'));
+
+        if (tabName === 'file') {
+            document.getElementById('tabFileBtn').classList.add('active');
+            document.getElementById('paneFile').classList.remove('d-none');
+        } else if (tabName === 'url') {
+            document.getElementById('tabUrlBtn').classList.add('active');
+            document.getElementById('paneUrl').classList.remove('d-none');
+            document.getElementById('vtUrlInput')?.focus();
+        } else if (tabName === 'search') {
+            document.getElementById('tabSearchBtn').classList.add('active');
+            document.getElementById('paneSearch').classList.remove('d-none');
+            document.getElementById('vtSearchInput')?.focus();
+        }
+    }
+
+    function scanVtUrl() {
+        let val = document.getElementById('vtUrlInput').value.trim();
+        if (!val) {
+            alert('Please enter a valid URL to scan.');
+            return;
+        }
+
+        if (!val.startsWith('http://') && !val.startsWith('https://')) {
+            val = 'http://' + val;
+        }
+
+        window.location.href = "{{ url_for('scanner.scan_url') }}?url=" + encodeURIComponent(val);
+    }
+
+    function searchVtIoc() {
+        const val = document.getElementById('vtSearchInput').value.trim();
+        if (!val) {
+            alert('Please enter an IP address, domain, or cryptographic hash to search.');
+            return;
+        }
+
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+            document.getElementById('vtUrlInput').value = val;
+            switchVtTab('url');
+            scanVtUrl();
+            return;
+        }
+
+        window.location.href = "{{ url_for('scanner.scan_ioc') }}?q=" + encodeURIComponent(val);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const fileInput = document.getElementById('email_file');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const dropZone = document.getElementById('dropZone');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitBtnContainer = document.getElementById('submitBtnContainer');
+
+        // Add Enter key listeners for URL & SEARCH inputs
+        document.getElementById('vtUrlInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                scanVtUrl();
+            }
+        });
+
+        document.getElementById('vtSearchInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchVtIoc();
+            }
+        });
+
+        if (fileInput && fileNameDisplay) {
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    fileNameDisplay.textContent = `${fileInput.files[0].name} (${(fileInput.files[0].size / 1024).toFixed(1)} KB)`;
+                    fileNameDisplay.classList.add('text-primary', 'fw-bold');
+                    submitBtnContainer?.classList.remove('d-none');
+                } else {
+                    submitBtnContainer?.classList.add('d-none');
+                }
+            });
+        }
+
+        if (dropZone) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('is-dragging');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('is-dragging');
+                });
+            });
+        }
+
+        uploadForm?.addEventListener('submit', () => {
+            if (!fileInput?.files.length) return;
+            uploadProgress?.classList.remove('d-none');
+            submitBtn?.setAttribute('disabled', 'disabled');
+            if (submitBtn) submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Starting Threat Analysis...';
+        });
+    });
+</script>
+{% endblock %}

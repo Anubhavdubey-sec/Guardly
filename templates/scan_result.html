@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}{{ analysis.verdict }} · Investigation #{{ scan.id }} · PhishGuard{% endblock %}
+
+{% block content %}
+{% set risk_tone = 'danger' if analysis.score >= 50 else ('warning' if analysis.score >= 20 else 'success') %}
+{% set risk_hex = '#f05252' if analysis.score >= 50 else ('#f59e0b' if analysis.score >= 20 else '#22c55e') %}
+{% set sender_domain = (email_data.from_address or '').split('@')|last %}
+{% set reply_domain = (email_data.reply_to or '').split('@')|last %}
+{% set domain_iocs = email_data.iocs.domains if email_data.iocs else [] %}
+{% set ip_iocs = email_data.iocs.ip_addresses if email_data.iocs else [] %}
+{% set header_items = email_data.headers.items() if email_data.headers else [] %}
+
+<div class="case-header">
+    <div class="case-heading">
+        {% if not is_public_result %}
+            <nav class="case-breadcrumb" aria-label="Breadcrumb">
+                <a href="{{ url_for('auth.dashboard') }}">Dashboard</a><i class="bi bi-chevron-right"></i>
+                <a href="{{ url_for('scanner.history') }}">History</a><i class="bi bi-chevron-right"></i>
+                <span>Report {{ scan.id }}</span>
+            </nav>
+        {% endif %}
+        <div class="case-kicker"><span class="case-live-dot"></span> Email threat report</div>
+        <h1>{{ email_data.subject or 'Untitled email message' }}</h1>
+        <div class="case-subject-meta">
+            <span class="font-mono">PG-{{ '%05d'|format(scan.id) }}</span>
+            <span>{{ scan.scan_time.strftime('%d %b %Y, %H:%M UTC') }}</span>
+            <span>{{ email_data.from_address or 'Unknown sender' }}</span>
+        </div>
+    </div>
+    <div class="case-actions">
+        <button class="btn btn-outline-light btn-sm" type="button" data-copy-page-link><i class="bi bi-link-45deg"></i> Share</button>
+        {% if current_user and current_user.role == 'admin' %}
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('scanner.export_scan_json', scan_id=scan.id) }}"><i class="bi bi-braces"></i> Export</a>
+            <a class="btn btn-primary btn-sm" href="{{ url_for('scanner.download_pdf_report', scan_id=scan.id) }}"><i class="bi bi-file-earmark-arrow-down"></i> Download</a>
+        {% endif %}
+    </div>
+</div>
+
+<section class="case-overview-strip tone-{{ risk_tone }}" aria-label="Investigation status">
+    <div class="case-verdict">
+        <span class="metric-label">Verdict</span>
+        <span class="verdict-mark verdict-{{ risk_tone }}"><i class="bi bi-shield-{{ 'fill' if risk_tone == 'danger' else 'check' }}"></i>{{ analysis.verdict }}</span>
+    </div>
+    <div class="case-artifact">
+        <span class="metric-label">Artifact</span>
+        <strong><i class="bi bi-envelope-paper me-1"></i> RFC822 email</strong>
+    </div>
+    <div class="case-artifact">
+        <span class="metric-label">Sender</span>
+        <strong class="font-mono">{{ email_data.from_address or 'Not available' }}</strong>
+    </div>
+    <div class="case-artifact">
+        <span class="metric-label">Message date</span>
+        <strong>{{ email_data.date or 'Not available' }}</strong>
+    </div>
+</section>
+
+<nav class="case-tabs" aria-label="Investigation report sections" role="tablist">
+    <button class="active" type="button" data-report-tab="overview" role="tab" aria-selected="true"><i class="bi bi-grid-1x2"></i> Overview</button>
+    <button type="button" data-report-tab="details" role="tab" aria-selected="false"><i class="bi bi-card-text"></i> Details</button>
+    <button type="button" data-report-tab="relations" role="tab" aria-selected="false"><i class="bi bi-diagram-3"></i> Relations</button>
+    {% if current_user and current_user.role in ['admin', 'analyst'] %}<button type="button" data-report-tab="history" role="tab" aria-selected="false"><i class="bi bi-clock-history"></i> History</button>{% endif %}
+    <button type="button" data-report-tab="intel" role="tab" aria-selected="false"><i class="bi bi-shield-check"></i> Local Context</button>
+</nav>
+
+<section class="report-tab-panel" data-report-panel="overview" role="tabpanel">
+    <div class="report-workspace">
+        <div class="report-main-column">
+            <section class="investigation-card score-card tone-{{ risk_tone }}">
+                <div class="score-ring" style="--score: {{ analysis.score }}; --risk-color: {{ risk_hex }};"><span>{{ analysis.score }}</span><small>/ 100</small></div>
+                <div class="score-copy">
+                    <div class="section-overline">Risk score</div>
+                    <h2>{{ analysis.verdict }} email</h2>
+                    {% if analysis.score >= 50 %}
+                        <p>Multiple high-priority signals require containment before this message is opened or forwarded.</p>
+                    {% elif analysis.score >= 20 %}
+                        <p>Signals need analyst verification. Confirm the sender and destination before any interaction.</p>
+                    {% else %}
+                        <p>No high-severity local rules were triggered. Continue with normal verification practices.</p>
+                    {% endif %}
+                </div>
+                <div class="score-stats" aria-label="Detection statistics">
+                    <div><span>Signals</span><strong>{{ analysis.findings|length }}</strong></div>
+                    <div><span>Categories</span><strong>{{ analysis.categories|length }}</strong></div>
+                    <div><span>Indicators</span><strong>{{ analysis.url_assessments|length + domain_iocs|length + ip_iocs|length }}</strong></div>
+                </div>
+            </section>
+
+            <section class="investigation-card">
+                <div class="investigation-card-header">
+                    <div><div class="section-overline">Detection summary</div><h2>Key findings</h2></div>
+                    <span class="count-badge">{{ analysis.findings|length }} findings</span>
+                </div>
+                {% if analysis.findings %}
+                    <div class="finding-stack">
+                        {% for finding in analysis.findings %}
+                            <article class="finding-row tone-{{ risk_tone }}">
+                                <span class="finding-symbol"><i class="bi bi-exclamation-triangle"></i></span>
+                                <div><strong>{{ analysis.categories[loop.index0] if analysis.categories[loop.index0] else 'Threat signal' }}</strong><p>{{ finding }}</p></div>
+                                <span class="risk-tag risk-{{ risk_tone }}">{{ analysis.verdict }}</span>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="quiet-state"><i class="bi bi-shield-check"></i><div><strong>No adverse findings</strong><span>The local rule engine did not detect suspicious content or authentication failures.</span></div></div>
+                {% endif %}
+            </section>
+
+            <section class="investigation-card">
+                <div class="investigation-card-header">
+                    <div><div class="section-overline">Indicator inventory</div><h2>URLs, domains, IPs &amp; hashes</h2></div>
+                    <span class="count-badge">{{ analysis.url_assessments|length + domain_iocs|length + ip_iocs|length }} observed</span>
+                </div>
+                <div class="indicator-grid">
+                    {% for item in analysis.url_assessments %}
+                        {% set item_tone = 'warning' if item.status == 'Suspicious' else 'success' %}
+                        <article class="indicator-tile">
+                            <div class="indicator-tile-top"><span><i class="bi bi-link-45deg"></i> URL</span><b class="risk-{{ item_tone }}">{{ item.status }}</b></div>
+                            <code>{{ item.url }}</code>
+                            <p>{{ item.reasons|join(', ') if item.reasons else 'No adverse local reputation signal.' }}</p>
+                            <div class="indicator-controls"><button type="button" class="btn btn-sm btn-outline-light" data-copy-value="{{ item.url }}"><i class="bi bi-copy"></i> Copy</button><a href="{{ url_for('scanner.scan_url', url=item.url) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-search"></i> Inspect URL</a></div>
+                        </article>
+                    {% endfor %}
+                    {% for domain in domain_iocs[:3] %}
+                        <article class="indicator-tile"><div class="indicator-tile-top"><span><i class="bi bi-globe2"></i> Domain</span><b>Observed</b></div><code>{{ domain }}</code><p>Extracted from the submitted email payload.</p><div class="indicator-controls"><button type="button" class="btn btn-sm btn-outline-light" data-copy-value="{{ domain }}"><i class="bi bi-copy"></i> Copy</button><a href="{{ url_for('scanner.scan_ioc', q=domain) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-search"></i> Inspect Domain</a></div></article>
+                    {% endfor %}
+                    {% for ip in ip_iocs[:3] %}
+                        <article class="indicator-tile">
+                            <div class="indicator-tile-top"><span><i class="bi bi-hdd-network"></i> IP address</span><b>Observed</b></div>
+                            <code>{{ ip }}</code>
+                            {% if email_data.ip_locations %}
+                                {% set loc = email_data.ip_locations[loop.index0] if loop.index0 < email_data.ip_locations|length else None %}
+                                {% if loc %}
+                                    <p class="text-info font-mono small mb-0 mt-1"><i class="bi bi-geo-alt-fill me-1"></i>{{ loc.location_display }}</p>
+                                {% else %}
+                                    <p>Extracted from the submitted email payload.</p>
+                                {% endif %}
+                            {% else %}
+                                <p>Extracted from the submitted email payload.</p>
+                            {% endif %}
+                            <div class="indicator-controls"><button type="button" class="btn btn-sm btn-outline-light" data-copy-value="{{ ip }}"><i class="bi bi-copy"></i> Copy</button><a href="{{ url_for('scanner.scan_ioc', q=ip) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-search"></i> Geo Lookup</a></div>
+                        </article>
+                    {% endfor %}
+                    <article class="indicator-tile indicator-empty"><div class="indicator-tile-top"><span><i class="bi bi-fingerprint"></i> Hashes</span><b>None</b></div><code>—</code><p>Attachment hashes were not captured for this report.</p></article>
+                </div>
+            </section>
+        </div>
+
+        <aside class="report-context-panel">
+            <section class="context-card context-verdict tone-{{ risk_tone }}">
+                <div class="section-overline">Investigation status</div>
+                <div class="context-score"><strong>{{ analysis.score }}</strong><span>risk score</span></div>
+                <span class="verdict-mark verdict-{{ risk_tone }}">{{ analysis.verdict }}</span>
+                <p>Automated analysis completed {{ scan.scan_time.strftime('%H:%M UTC') }}.</p>
+            </section>
+            <section class="context-card">
+                <div class="context-card-header"><div><div class="section-overline">Report Actions</div><h2>Export &amp; Share</h2></div></div>
+                <div class="action-list">
+                    {% if current_user and current_user.role == 'admin' %}
+                        <a href="{{ url_for('scanner.download_pdf_report', scan_id=scan.id) }}" class="btn btn-sm btn-outline-primary w-100 text-start mb-2"><i class="bi bi-file-earmark-arrow-down me-2"></i><span>Export PDF Report</span></a>
+                        <a href="{{ url_for('scanner.export_scan_json', scan_id=scan.id) }}" class="btn btn-sm btn-outline-info w-100 text-start mb-2"><i class="bi bi-braces me-2"></i><span>Export JSON Data</span></a>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline-light w-100 text-start" data-copy-page-link><i class="bi bi-link-45deg me-2"></i><span>Copy Shareable Link</span></button>
+                </div>
+            </section>
+            <section class="context-card">
+                <div class="section-overline">Observed message</div>
+                <dl class="context-list"><div><dt>From</dt><dd class="font-mono">{{ email_data.from_address or '—' }}</dd></div><div><dt>Reply-to</dt><dd class="font-mono">{{ email_data.reply_to or '—' }}</dd></div><div><dt>Attachments</dt><dd>{{ email_data.attachments|length }}</dd></div><div><dt>Body format</dt><dd>{{ 'HTML' if email_data.has_html else 'Plain text' }}</dd></div></dl>
+            </section>
+        </aside>
+    </div>
+</section>
+
+<section class="report-tab-panel d-none" data-report-panel="details" role="tabpanel">
+    <div class="report-workspace">
+        <div class="report-main-column">
+            <section class="investigation-card">
+                <div class="investigation-card-header"><div><div class="section-overline">Message metadata</div><h2>Email headers</h2></div><span class="count-badge">{{ email_data.headers|length }} fields</span></div>
+                <div class="header-table">
+                    {% for name, value in header_items %}<div><dt>{{ name }}</dt><dd class="font-mono">{{ value|string }}</dd></div>{% else %}<div><dt>Headers</dt><dd>Not available</dd></div>{% endfor %}
+                </div>
+            </section>
+            <section class="investigation-card">
+                <div class="investigation-card-header"><div><div class="section-overline">Decoded content</div><h2>Extracted text</h2></div></div>
+                <pre class="email-body">{{ email_data.body or 'No plaintext content was extracted from this message.' }}</pre>
+            </section>
+        </div>
+        <aside class="report-context-panel">
+            <section class="context-card">
+                <div class="section-overline">Authentication</div><h2>Sender controls</h2>
+                <div class="auth-check-list"><div><span>SPF</span><b class="auth-{{ 'pass' if analysis.auth_results.spf == 'pass' else 'neutral' if analysis.auth_results.spf == 'not available' else 'fail' }}">{{ analysis.auth_results.spf }}</b></div><div><span>DKIM</span><b class="auth-{{ 'pass' if analysis.auth_results.dkim == 'pass' else 'neutral' if analysis.auth_results.dkim == 'not available' else 'fail' }}">{{ analysis.auth_results.dkim }}</b></div><div><span>DMARC</span><b class="auth-{{ 'pass' if analysis.auth_results.dmarc == 'pass' else 'neutral' if analysis.auth_results.dmarc == 'not available' else 'fail' }}">{{ analysis.auth_results.dmarc }}</b></div></div>
+            </section>
+            <section class="context-card"><div class="section-overline">Identity alignment</div><dl class="context-list"><div><dt>From domain</dt><dd class="font-mono">{{ sender_domain or '—' }}</dd></div><div><dt>Reply-to domain</dt><dd class="font-mono">{{ reply_domain or '—' }}</dd></div><div><dt>Recipient</dt><dd class="font-mono">{{ email_data.to or '—' }}</dd></div></dl></section>
+        </aside>
+    </div>
+</section>
+
+<section class="report-tab-panel d-none" data-report-panel="relations" role="tabpanel">
+    <section class="investigation-card relationship-card">
+        <div class="investigation-card-header"><div><div class="section-overline">Relationship map</div><h2>Connected indicators</h2><p>Locally derived from the submitted message and retained report data.</p></div></div>
+        <div class="relationship-flow"><article><i class="bi bi-envelope"></i><span>Email</span><strong>{{ email_data.subject or 'Message' }}</strong></article><i class="bi bi-arrow-down"></i><article><i class="bi bi-globe2"></i><span>Sender domain</span><strong>{{ sender_domain or 'Not extracted' }}</strong></article><i class="bi bi-arrow-down"></i><article><i class="bi bi-hdd-network"></i><span>IP indicators</span><strong>{{ ip_iocs|length }} observed</strong></article><i class="bi bi-arrow-down"></i><article><i class="bi bi-fingerprint"></i><span>Attachment hashes</span><strong>Not captured</strong></article><i class="bi bi-arrow-down"></i><article><i class="bi bi-clock-history"></i><span>Previous scans</span><strong>Open scan history</strong></article></div>
+    </section>
+</section>
+
+{% if current_user and current_user.role in ['admin', 'analyst'] %}
+<section class="report-tab-panel d-none" data-report-panel="history" role="tabpanel">
+    <section class="investigation-card empty-workspace"><i class="bi bi-clock-history"></i><div><div class="section-overline">Report history</div><h2>Continue the investigation</h2><p>Review previous scans, filter the archive, and compare findings across related reports.</p><a href="{{ url_for('scanner.history') }}" class="btn btn-primary btn-sm mt-2"><i class="bi bi-arrow-right"></i> Open history</a></div></section>
+</section>
+{% endif %}
+
+<section class="report-tab-panel d-none" data-report-panel="intel" role="tabpanel">
+    <div class="report-workspace">
+        <section class="investigation-card report-main-column">
+            <div class="investigation-card-header"><div><div class="section-overline">Local Engines</div><h2>Security &amp; Context Modules</h2><p>Local analysis engines and contextual network lookups.</p></div></div>
+            <div class="provider-card-grid">
+                <article class="provider-active"><div><i class="bi bi-shield-check text-success"></i><strong>Local Rule Engine</strong></div><span>Active</span><small>Confidence: deterministic · Updated: scan time</small></article>
+                <article class="provider-active"><div><i class="bi bi-file-earmark-code text-info"></i><strong>RFC822 Header Parser</strong></div><span>Active</span><small>Confidence: deterministic · Updated: scan time</small></article>
+                <article class="provider-active"><div><i class="bi bi-journal-text text-primary"></i><strong>WHOIS / RDAP &amp; IP Geo</strong></div><span>{{ 'Active' if analysis.reputation_data.lookups else 'Local Context' }}</span><small>Confidence: contextual · Updated: scan time</small></article>
+                <article class="provider-active"><div><i class="bi bi-link-45deg text-warning"></i><strong>URL Heuristic Engine</strong></div><span>Active</span><small>Confidence: deterministic · Updated: scan time</small></article>
+            </div>
+            <div class="intel-note"><i class="bi bi-info-circle"></i><span>Local rule evaluation completed. All checks processed locally on-device.</span></div>
+        </section>
+        <aside class="report-context-panel"><section class="context-card"><div class="section-overline">Lookup summary</div><h2>Analysis Summary</h2><dl class="context-list"><div><dt>Domains</dt><dd>{{ domain_iocs|length }}</dd></div><div><dt>IPs</dt><dd>{{ ip_iocs|length }}</dd></div><div><dt>Rule signals</dt><dd>{{ analysis.findings|length }}</dd></div></dl></section></aside>
+    </div>
+</section>
+
+<div class="report-footer-actions">
+    <a class="btn btn-primary" href="{{ url_for('scanner.upload') }}"><i class="bi bi-cloud-arrow-up"></i> Analyze another email</a>
+    {% if current_user and current_user.role in ['admin', 'analyst'] %}<a class="btn btn-outline-light" href="{{ url_for('scanner.history') }}"><i class="bi bi-layers-half"></i> Return to history</a>{% endif %}
+    {% if current_user and current_user.role == 'admin' %}<form method="post" action="{{ url_for('scanner.delete_scan', scan_id=scan.id) }}" onsubmit="return confirm('Delete this scan report? This action cannot be undone.');"><button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> Delete report</button></form>{% endif %}
+</div>
+<span id="copyFeedback" class="visually-hidden" aria-live="polite"></span>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const feedback = document.getElementById('copyFeedback');
+        const copy = async (value, message) => {
+            if (!value) return;
+            try { await navigator.clipboard.writeText(value); }
+            catch (_) { const input = document.createElement('textarea'); input.value = value; document.body.append(input); input.select(); document.execCommand('copy'); input.remove(); }
+            if (feedback) feedback.textContent = message;
+        };
+        document.querySelectorAll('[data-copy-value]').forEach(button => button.addEventListener('click', () => copy(button.dataset.copyValue, 'Indicator copied.')));
+        document.querySelector('[data-copy-page-link]')?.addEventListener('click', () => copy(window.location.href, 'Report link copied.'));
+        document.querySelectorAll('[data-report-tab]').forEach(tab => tab.addEventListener('click', () => {
+            const target = tab.dataset.reportTab;
+            document.querySelectorAll('[data-report-tab]').forEach(item => { item.classList.toggle('active', item === tab); item.setAttribute('aria-selected', String(item === tab)); });
+            document.querySelectorAll('[data-report-panel]').forEach(panel => panel.classList.toggle('d-none', panel.dataset.reportPanel !== target));
+        }));
+    });
+</script>
+{% endblock %}

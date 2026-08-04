@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}System & Security Audit Logs - PhishGuard Enterprise XDR{% endblock %}
+
+{% block content %}
+<div class="admin-logs">
+    <div class="page-heading mb-4">
+        <div>
+            <p class="eyebrow mb-1"><i class="bi bi-journal-text me-1"></i> AUDIT TRAIL</p>
+            <h1 class="h2 fw-bold text-white mb-1">Security Audit &amp; System Logs</h1>
+            <p class="text-muted small mb-0">Immutable event stream tracking authentication, scan execution, and role modifications.</p>
+        </div>
+    </div>
+
+    <div class="soc-card">
+        <div class="card-section-header mb-3">
+            <div>
+                <p class="eyebrow mb-1"><i class="bi bi-journal-code me-1"></i> RECORD STREAM</p>
+                <h2 class="soc-card-title fs-5">Audit Log Database</h2>
+            </div>
+            <span class="badge bg-dark border border-secondary text-muted font-mono" style="font-size: 0.75rem;">
+                {{ logs|length }} EVENTS RECORDED
+            </span>
+        </div>
+
+        {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0 soc-table">
+                    <thead>
+                        <tr>
+                            <th>TIMESTAMP (UTC)</th>
+                            <th>ACTOR</th>
+                            <th>EVENT TYPE</th>
+                            <th>TARGET OBJECT</th>
+                            <th>AUDIT DETAILS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr class="soc-table-row">
+                                <td class="text-muted small font-mono">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td class="fw-semibold text-white">
+                                    <i class="bi bi-person-badge text-muted me-1"></i>{{ log.actor_name or 'System Engine' }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info font-mono border border-info-subtle py-1 px-2" style="font-size: 0.78rem;">
+                                        {{ log.event }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small font-mono">
+                                    {% if log.target_type %}
+                                        {{ log.target_type }} #{{ log.target_id or '-' }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small font-mono">{{ log.detail or '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state p-4 text-center">
+                <i class="bi bi-journal-x display-4 text-muted mb-2"></i>
+                <p class="text-muted mb-0">No audit log records available.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

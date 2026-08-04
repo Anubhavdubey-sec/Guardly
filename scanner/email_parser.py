@@ -1,0 +1,75 @@
+import email
+from email import policy
+from email.utils import parseaddr
+import re
+
+URL_REGEX = re.compile(r"https?://[^\s<>\"']+|www\.[^\s<>\"']+")
+DOMAIN_REGEX = re.compile(r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}")
+IP_REGEX = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+
+def parse_email(file_path):
+    with open(file_path, "rb") as f:
+        msg = email.message_from_binary_file(f, policy=policy.default)
+
+    from_header = msg.get("From", "")
+    to_header = msg.get("To", "")
+    subject_header = msg.get("Subject", "")
+    date_header = msg.get("Date", "")
+    reply_to_header = msg.get("Reply-To", "")
+
+    from_name, from_address = parseaddr(str(from_header))
+
+    body_plain = ""
+    body_html = ""
+    attachments = []
+
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            content_disposition = str(part.get("Content-Disposition", ""))
+
+            if "attachment" in content_disposition or part.get_filename():
+                filename = part.get_filename() or "unnamed_attachment"
+                payload = part.get_payload(decode=True) or b""
+                attachments.append({
+                    "filename": filename,
+                    "content_type": content_type,
+                    "size": len(payload),
+                })
+            elif content_type == "text/plain":
+                body_plain += part.get_content() or ""
+            elif content_type == "text/html":
+                body_html += part.get_content() or ""
+    else:
+        content_type = msg.get_content_type()
+        if content_type == "text/plain":
+            body_plain = msg.get_content() or ""
+        elif content_type == "text/html":
+            body_html = msg.get_content() or ""
+
+    full_body = body_plain or body_html or ""
+    extracted_urls = list(dict.fromkeys(URL_REGEX.findall(full_body)))
+    extracted_domains = list(dict.fromkeys(DOMAIN_REGEX.findall(full_body)))
+    extracted_ips = list(dict.fromkeys(IP_REGEX.findall(full_body)))
+
+    return {
+        "from": str(from_header),
+        "from_address": from_address,
+        "from_name": from_name,
+        "to": str(to_header),
+        "subject": str(subject_header),
+        "date": str(date_header),
+        "reply_to": str(reply_to_header),
+        "body": full_body,
+        "urls": extracted_urls,
+        "attachments": attachments,
+        "headers": dict(msg.items()),
+        "has_html": bool(body_html),
+        "has_plain_text": bool(body_plain),
+        "iocs": {
+            "domains": extracted_domains,
+            "ip_addresses": extracted_ips,
+            "urls": extracted_urls,
+        },
+    }

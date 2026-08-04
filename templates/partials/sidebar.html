@@ -1,0 +1,63 @@
+<aside id="socSidebar" class="soc-sidebar">
+    <div class="sidebar-brand p-3">
+        <a href="{{ url_for('auth.dashboard') }}" class="brand-link text-decoration-none d-flex align-items-center gap-2">
+            <div class="brand-icon-wrapper">
+                <i class="bi bi-shield-check text-info"></i>
+            </div>
+            <div class="d-flex flex-column">
+                <span class="fw-bold text-white fs-5 lh-1 brand-name">PhishGuard</span>
+                <span class="font-mono text-uppercase text-info" style="font-size: 0.62rem; letter-spacing: 1px;">OFFLINE EMAIL DEFENSE</span>
+            </div>
+        </a>
+        <button id="sidebarCollapse" class="sidebar-collapse-trigger ms-auto" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <i class="bi bi-layout-sidebar-inset"></i>
+        </button>
+    </div>
+    <nav class="sidebar-nav px-3 py-3">
+        <div class="nav-section-title font-mono">INVESTIGATION WORKSPACE</div>
+        <ul class="nav flex-column gap-1 mb-4">
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'auth.dashboard' %}active{% endif %}" href="{{ url_for('auth.dashboard') }}">
+                    <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'scanner.upload' %}active{% endif %}" href="{{ url_for('scanner.upload') }}">
+                    <i class="bi bi-cloud-arrow-up"></i> <span>Scan Sample</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'scanner.history' %}active{% endif %}" href="{{ url_for('scanner.history') }}">
+                    <i class="bi bi-layers-half"></i> <span>Investigation History</span>
+                </a>
+            </li>
+        </ul>
+
+        {% if current_user and current_user.role == 'admin' %}
+            <div class="nav-section-title font-mono">ADMINISTRATION</div>
+            <ul class="nav flex-column gap-1">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+                        <i class="bi bi-speedometer"></i> <span>Admin Overview</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}" href="{{ url_for('admin.users') }}">
+                        <i class="bi bi-people-fill"></i> <span>User Control</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}" href="{{ url_for('admin.logs') }}">
+                        <i class="bi bi-journal-code"></i> <span>Audit Logs</span>
+                    </a>
+                </li>
+            </ul>
+        {% endif %}
+    </nav>
+    <div class="sidebar-footer p-3 mt-auto border-top border-secondary border-opacity-10">
+        <div class="engine-badge d-flex align-items-center gap-2 text-muted small">
+            <i class="bi bi-cpu text-info"></i>
+            <span class="font-mono" style="font-size: 0.72rem;">v2.4 Local Engine</span>
+        </div>
+    </div>
+</aside>

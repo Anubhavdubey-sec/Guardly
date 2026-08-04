@@ -1,0 +1,42 @@
+<header class="soc-topbar">
+    <div class="d-flex align-items-center justify-content-between page-container h-100">
+        <div class="d-flex align-items-center gap-3 min-w-0">
+            <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-md-none" type="button" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+            <a class="topbar-workspace d-none d-xl-flex align-items-center gap-2 text-decoration-none" href="{{ url_for('auth.dashboard') }}">
+                <i class="bi bi-grid-1x2-fill"></i><span>Investigation workspace</span>
+            </a>
+            <div class="topbar-search d-none d-md-flex align-items-center">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" class="form-control form-control-sm search-input" placeholder="Search reports, domains, IPs…" readonly onclick="window.location.href='{{ url_for('scanner.history') }}'">
+                <kbd class="search-kbd">CTRL K</kbd>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="system-status-pill d-none d-lg-flex align-items-center gap-2">
+                <span class="status-pulse-dot"></span>
+                <span class="status-label font-mono">ENGINE ONLINE</span>
+            </div>
+            <div class="topbar-divider d-none d-sm-block"></div>
+            <div class="topbar-notifications position-relative">
+                <button class="btn btn-icon btn-sm topbar-icon-control" type="button" title="Notifications" aria-label="Notifications">
+                    <i class="bi bi-bell"></i><span class="notification-badge"></span>
+                </button>
+            </div>
+            <button id="themeToggle" class="btn btn-icon btn-sm topbar-icon-control" type="button" title="Use light mode" aria-label="Toggle dark mode" aria-pressed="false">
+                <i class="bi bi-sun"></i>
+            </button>
+            {% if current_user %}
+                <div class="topbar-user-profile d-flex align-items-center gap-2 ms-1">
+                    <div class="user-avatar-badge">{{ current_user.username[0]|upper }}</div>
+                    <div class="d-none d-lg-flex flex-column text-start">
+                        <span class="user-name fw-semibold lh-1">{{ current_user.username }}</span>
+                        <span class="user-role font-mono text-uppercase">{{ current_user.role }}</span>
+                    </div>
+                    <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline ms-1">
+                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Sign out" aria-label="Sign out"><i class="bi bi-box-arrow-right"></i></button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</header>

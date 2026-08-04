@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Console Overview - PhishGuard Enterprise XDR{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Header -->
+    <div class="page-heading mb-4">
+        <div>
+            <p class="eyebrow mb-1"><i class="bi bi-shield-shaded me-1"></i> PLATFORM CONTROL</p>
+            <h1 class="h2 fw-bold text-white mb-1">Administrator Control Center</h1>
+            <p class="text-muted small mb-0">System metrics, role distribution, and real-time security audit trails.</p>
+        </div>
+        <div class="page-heading-actions">
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-people me-1"></i> Manage Users</a>
+            <a href="{{ url_for('admin.logs') }}" class="btn btn-primary btn-sm"><i class="bi bi-journal-code me-1"></i> View All Logs</a>
+        </div>
+    </div>
+
+    <!-- Admin KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon-wrapper bg-blue-subtle">
+                        <i class="bi bi-people-fill text-info"></i>
+                    </div>
+                    <span class="trend-badge trend-neutral font-mono"><i class="bi bi-shield-check"></i> Provisioned</span>
+                </div>
+                <div class="kpi-card-body">
+                    <span class="kpi-label">REGISTERED USERS</span>
+                    <h2 class="kpi-value font-mono counter-value" data-target="{{ stats.users }}">{{ stats.users }}</h2>
+                    <p class="kpi-subtext"><i class="bi bi-person-check text-info me-1"></i> Staff analysts &amp; admin accounts</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="kpi-card kpi-purple">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon-wrapper bg-purple-subtle">
+                        <i class="bi bi-radar text-primary"></i>
+                    </div>
+                    <span class="trend-badge trend-neutral font-mono"><i class="bi bi-cpu"></i> System Activity</span>
+                </div>
+                <div class="kpi-card-body">
+                    <span class="kpi-label">TOTAL SCANS EXECUTED</span>
+                    <h2 class="kpi-value font-mono counter-value" data-target="{{ stats.scans }}">{{ stats.scans }}</h2>
+                    <p class="kpi-subtext"><i class="bi bi-activity text-primary me-1"></i> Cumulative email investigations</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-12">
+            <div class="kpi-card kpi-red">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon-wrapper bg-red-subtle">
+                        <i class="bi bi-bug-fill text-danger"></i>
+                    </div>
+                    <span class="trend-badge trend-danger font-mono"><i class="bi bi-shield-lock"></i> Privileged Access</span>
+                </div>
+                <div class="kpi-card-body">
+                    <span class="kpi-label">ADMINISTRATOR ACCOUNTS</span>
+                    <h2 class="kpi-value text-danger font-mono counter-value" data-target="{{ stats.admins }}">{{ stats.admins }}</h2>
+                    <p class="kpi-subtext"><i class="bi bi-person-lock text-danger me-1"></i> Privileged platform administrators</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="kpi-card kpi-amber">
+                <div class="kpi-card-header">
+                    <div class="kpi-icon-wrapper bg-amber-subtle">
+                        <i class="bi bi-person-workspace text-warning"></i>
+                    </div>
+                    <span class="trend-badge trend-warning font-mono"><i class="bi bi-radar"></i> Investigation Team</span>
+                </div>
+                <div class="kpi-card-body">
+                    <span class="kpi-label">ANALYST ACCOUNTS</span>
+                    <h2 class="kpi-value text-warning font-mono counter-value" data-target="{{ stats.analysts }}">{{ stats.analysts }}</h2>
+                    <p class="kpi-subtext"><i class="bi bi-person-check text-warning me-1"></i> Staff permitted to review reports</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="soc-card">
+        <div class="card-section-header mb-3">
+            <div>
+                <p class="eyebrow mb-1"><i class="bi bi-journal-code me-1"></i> AUDIT STREAM</p>
+                <h2 class="soc-card-title fs-5">System &amp; Security Log Stream</h2>
+            </div>
+            <a href="{{ url_for('admin.logs') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-right"></i> Full Audit Trail</a>
+        </div>
+
+        {% if recent_logs %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0 soc-table">
+                    <thead>
+                        <tr>
+                            <th>EVENT KEY</th>
+                            <th>ACTOR / USER</th>
+                            <th>DETAILS</th>
+                            <th class="text-end">TIMESTAMP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                            <tr class="soc-table-row">
+                                <td>
+                                    <span class="badge bg-info-subtle text-info font-mono border border-info-subtle py-1 px-2" style="font-size: 0.78rem;">
+                                        {{ log.event }}
+                                    </span>
+                                </td>
+                                <td class="fw-semibold text-white">
+                                    <i class="bi bi-person-badge text-muted me-1"></i>{{ log.actor_name or 'System Event' }}
+                                </td>
+                                <td class="text-muted small font-mono">{{ log.detail or '-' }}</td>
+                                <td class="text-end text-muted small font-mono">{{ log.created_at.strftime('%d %b %Y, %H:%M:%S') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state p-4 text-center">
+                <i class="bi bi-journal-check display-4 text-muted mb-2"></i>
+                <p class="text-muted mb-0">No audit log events recorded yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
