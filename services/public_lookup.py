@@ -52,7 +52,7 @@ def get_ip_location(ip_str):
     # Live IP Geolocation API attempt (ip-api.com) with 1.5s timeout
     try:
         url = f"http://ip-api.com/json/{ip_clean}?fields=status,message,country,countryCode,regionName,city,isp,org,query"
-        req = urllib.request.Request(url, headers={"User-Agent": "PhishGuard-IP-Geo/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Guardly-IP-Geo/1.0"})
         with urllib.request.urlopen(req, timeout=1.5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if data.get("status") == "success":

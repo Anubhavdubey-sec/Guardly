@@ -1,10 +1,11 @@
+{% set is_admin = current_user.is_authenticated and current_user.role == 'admin' %}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}PhishGuard - Offline Enterprise Email Investigation Platform{% endblock %}</title>
+    <title>{% block title %}Guardly - Offline Enterprise Email Investigation Platform{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,19 +14,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         (function() {
-            {% if current_user and current_user.role in ['admin', 'analyst'] %}
+            const savedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme');
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+                document.documentElement.classList.add('light-mode');
+            } else {
                 document.documentElement.setAttribute('data-bs-theme', 'dark');
                 document.documentElement.classList.remove('light-mode');
-            {% else %}
-                const savedTheme = localStorage.getItem('phishguard-theme');
-                if (savedTheme === 'light') {
-                    document.documentElement.setAttribute('data-bs-theme', 'light');
-                    document.documentElement.classList.add('light-mode');
-                } else {
-                    document.documentElement.setAttribute('data-bs-theme', 'dark');
-                    document.documentElement.classList.remove('light-mode');
-                }
-            {% endif %}
+            }
         })();
     </script>
 </head>
@@ -40,15 +36,41 @@
     </div>
 
     <!-- Initial Page Open Animated Logo Splash Screen -->
-    <div id="phishguardSplash" class="splash-screen-overlay" aria-hidden="true">
+    <div id="guardlySplash" class="splash-screen-overlay" aria-hidden="true">
         <div class="splash-content text-center">
             <div class="splash-logo-wrapper mb-3">
                 <div class="splash-radar-ring"></div>
-                <div class="splash-shield-orb">
-                    <i class="bi bi-shield-check"></i>
+                <div class="splash-shield-orb d-flex align-items-center justify-content-center">
+                    <svg class="guardly-soldier-svg" width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="soldierGoldSplash" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#FBBF24"/>
+                          <stop offset="50%" stop-color="#F59E0B"/>
+                          <stop offset="100%" stop-color="#B45309"/>
+                        </linearGradient>
+                        <linearGradient id="soldierBlueSplash" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#2563EB"/>
+                          <stop offset="100%" stop-color="#1E3A8A"/>
+                        </linearGradient>
+                      </defs>
+                      <g id="figure" class="guardly-anim-figure">
+                        <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldSplash)"/>
+                        <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueSplash)" stroke="url(#soldierGoldSplash)" stroke-width="1.2"/>
+                        <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                      </g>
+                      <g id="shield" class="guardly-anim-shield">
+                        <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueSplash)" stroke="url(#soldierGoldSplash)" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldSplash)" stroke-width="1" opacity="0.6"/>
+                      </g>
+                      <g id="sword" class="guardly-anim-sword">
+                        <path d="M14 26H26" stroke="url(#soldierGoldSplash)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round" class="guardly-glint-path"/>
+                      </g>
+                    </svg>
                 </div>
             </div>
-            <h1 class="splash-brand-title font-mono fw-bold mb-3">PhishGuard</h1>
+            <h1 class="splash-brand-title font-mono fw-bold mb-3">Guardly</h1>
             <div class="splash-progress-bar mx-auto">
                 <div class="splash-progress-fill"></div>
             </div>
@@ -68,23 +90,35 @@
                     <div class="d-flex align-items-center justify-content-between page-container" style="height: 72px;">
                         <a href="{{ url_for('scanner.upload') }}" class="brand-logo text-decoration-none d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
                             <div class="brand-icon-wrapper flex-shrink-0">
-                                <svg class="pg-logo-svg" width="32" height="32" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="pg-logo-svg" width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <defs>
-                                    <linearGradient id="pgShieldGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                                      <stop offset="0%" stop-color="#3B82F6"/>
-                                      <stop offset="100%" stop-color="#1D4ED8"/>
+                                    <linearGradient id="soldierGoldNav" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                      <stop offset="0%" stop-color="#FBBF24"/>
+                                      <stop offset="50%" stop-color="#F59E0B"/>
+                                      <stop offset="100%" stop-color="#B45309"/>
                                     </linearGradient>
-                                    <linearGradient id="pgGlowGrad" x1="18" y1="0" x2="18" y2="36" gradientUnits="userSpaceOnUse">
-                                      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.8"/>
-                                      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.2"/>
+                                    <linearGradient id="soldierBlueNav" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                      <stop offset="0%" stop-color="#2563EB"/>
+                                      <stop offset="100%" stop-color="#1E3A8A"/>
                                     </linearGradient>
                                   </defs>
-                                  <path d="M18 3L4 9V17C4 25.5 10 32.2 18 34C26 32.2 32 25.5 32 17V9L18 3Z" fill="url(#pgShieldGrad)" stroke="#60A5FA" stroke-width="1.5" stroke-linejoin="round"/>
-                                  <path d="M18 5L6 10.2V17C6 24.3 11.2 30.2 18 31.8C24.8 30.2 30 24.3 30 17V10.2L18 5Z" fill="url(#pgGlowGrad)" opacity="0.3"/>
-                                  <path d="M13 17.5L16.5 21L23 13.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                  <g id="figure">
+                                    <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldNav)"/>
+                                    <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueNav)" stroke="url(#soldierGoldNav)" stroke-width="1.2"/>
+                                    <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                                  </g>
+                                  <g id="shield">
+                                    <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueNav)" stroke="url(#soldierGoldNav)" stroke-width="1.5" stroke-linejoin="round"/>
+                                    <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldNav)" stroke-width="1" opacity="0.6"/>
+                                  </g>
+                                  <g id="sword">
+                                    <path d="M14 26H26" stroke="url(#soldierGoldNav)" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
+                                  </g>
                                 </svg>
                             </div>
-                            <span class="fw-bold text-white fs-5 text-nowrap">PhishGuard <span class="badge bg-primary-subtle text-primary font-mono ms-1 d-none d-sm-inline-block" style="font-size: 0.65rem; letter-spacing: 0.08em;">LOCAL ANALYSIS ENGINE</span></span>
+                            <span class="fw-bold text-white fs-5 text-nowrap">Guardly <span class="badge bg-primary-subtle text-primary font-mono ms-1 d-none d-sm-inline-block" style="font-size: 0.65rem; letter-spacing: 0.08em;">LOCAL ANALYSIS ENGINE</span></span>
                         </a>
                         <div class="public-nav-actions d-flex align-items-center gap-2">
                             <a href="{{ url_for('scanner.upload') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-radar me-1"></i> Scan Email</a>
@@ -111,7 +145,7 @@
         {% else %}
             <footer class="public-footer py-3">
                 <div class="d-flex justify-content-between gap-3 page-container">
-                    <span><i class="bi bi-shield-lock me-1"></i> PhishGuard Email Defense</span>
+                    <span><i class="bi bi-shield-lock me-1"></i> Guardly Email Defense</span>
                     <span>Uploaded files are removed after analysis.</span>
                 </div>
             </footer>
@@ -136,7 +170,7 @@
                 document.body.classList.toggle('light-mode', isLight);
                 document.documentElement.classList.toggle('light-mode', isLight);
                 document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
-                localStorage.setItem('phishguard-theme', isLight ? 'light' : 'dark');
+                localStorage.setItem('guardly-theme', isLight ? 'light' : 'dark');
 
                 document.querySelectorAll('#themeToggle, .theme-toggle-btn').forEach(btn => {
                     btn.setAttribute('aria-pressed', String(isLight));
@@ -150,11 +184,18 @@
 
             const setSidebarState = (collapsed) => {
                 document.body.classList.toggle('sidebar-collapsed', collapsed);
-                collapseToggle?.setAttribute('aria-expanded', String(!collapsed));
-                localStorage.setItem('phishguard-sidebar-collapsed', String(collapsed));
+                if (collapseToggle) {
+                    collapseToggle.setAttribute('aria-expanded', String(!collapsed));
+                    collapseToggle.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+                    const icon = collapseToggle.querySelector('i');
+                    if (icon) {
+                        icon.className = collapsed ? 'bi bi-layout-sidebar-inset-reverse' : 'bi bi-layout-sidebar-inset';
+                    }
+                }
+                localStorage.setItem('guardly-sidebar-collapsed', String(collapsed));
             };
 
-            if (localStorage.getItem('phishguard-sidebar-collapsed') === 'true' && window.innerWidth >= 992) {
+            if ((localStorage.getItem('guardly-sidebar-collapsed') === 'true' || localStorage.getItem('phishguard-sidebar-collapsed') === 'true') && window.innerWidth >= 992) {
                 setSidebarState(true);
             }
             collapseToggle?.addEventListener('click', () => setSidebarState(!document.body.classList.contains('sidebar-collapsed')));
@@ -184,7 +225,7 @@
             closeBtn?.addEventListener('click', closeSidebar);
             backdrop?.addEventListener('click', closeSidebar);
 
-            const currentSavedTheme = localStorage.getItem('phishguard-theme') || 'dark';
+            const currentSavedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme') || 'dark';
             applyTheme(currentSavedTheme);
 
             document.addEventListener('click', (e) => {
@@ -197,7 +238,7 @@
             });
 
             // Smooth animated logo splash dismiss on page open without text ghosting
-            const splash = document.getElementById('phishguardSplash');
+            const splash = document.getElementById('guardlySplash') || document.getElementById('phishguardSplash');
             if (splash) {
                 setTimeout(() => {
                     splash.classList.add('fade-out');

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ analysis.verdict }} · Investigation #{{ scan.id }} · PhishGuard{% endblock %}
+{% block title %}{{ analysis.verdict }} · Investigation #{{ scan.id }} · Guardly{% endblock %}
 
 {% block content %}
 {% set risk_tone = 'danger' if analysis.score >= 50 else ('warning' if analysis.score >= 20 else 'success') %}

@@ -106,7 +106,7 @@ def build_scan_report(scan, email_data, analysis):
     # 1. Header Banner
     header_data = [
         [
-            Paragraph("<b>PhishGuard</b> <font color='#64748B'>| Email Security Telemetry</font>", title_style),
+            Paragraph("<b>Guardly</b> <font color='#64748B'>| Email Security Telemetry</font>", title_style),
             Paragraph(f"<b>REPORT #{scan.id:05d}</b><br/><font color='#64748B'>{datetime.now().strftime('%b %d, %Y %H:%M UTC')}</font>", ParagraphStyle("HeaderRight", parent=subtitle_style, alignment=2)),
         ]
     ]
@@ -213,7 +213,7 @@ def build_scan_report(scan, email_data, analysis):
     story.append(Spacer(1, 18))
     story.append(HRFlowable(width="100%", thickness=0.5, color=text_muted, spaceAfter=8))
     story.append(Paragraph(
-        "<b>PhishGuard Security Architecture:</b> All heuristics and parsing algorithms evaluated locally on-device. "
+        "<b>Guardly Security Architecture:</b> All heuristics and parsing algorithms evaluated locally on-device. "
         "Report compiled automatically.",
         subtitle_style
     ))

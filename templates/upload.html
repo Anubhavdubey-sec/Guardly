@@ -1,36 +1,48 @@
 {% extends "base.html" %}
 
-{% block title %}PhishGuard - Email Threat Scanner &amp; Threat Intelligence{% endblock %}
+{% block title %}Guardly - Email Threat Scanner &amp; Threat Intelligence{% endblock %}
 
 {% block content %}
 <div class="virustotal-landing-container">
 
-    <!-- Hero Header: PhishGuard Logo & Name -->
+    <!-- Hero Header: Guardly Logo & Name -->
     <section class="vt-hero text-center mb-4 py-2">
         <div class="d-inline-flex align-items-center justify-content-center gap-3 mb-1">
-            <svg class="pg-logo-svg flex-shrink-0" width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="guardly-soldier-svg flex-shrink-0" width="56" height="56" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="pgHeroShieldGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#3B82F6"/>
-                  <stop offset="100%" stop-color="#1D4ED8"/>
+                <linearGradient id="soldierGoldHero" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FBBF24"/>
+                  <stop offset="50%" stop-color="#F59E0B"/>
+                  <stop offset="100%" stop-color="#B45309"/>
                 </linearGradient>
-                <linearGradient id="pgHeroGlowGrad" x1="18" y1="0" x2="18" y2="36" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.8"/>
-                  <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.2"/>
+                <linearGradient id="soldierBlueHero" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#2563EB"/>
+                  <stop offset="100%" stop-color="#1E3A8A"/>
                 </linearGradient>
               </defs>
-              <path d="M18 3L4 9V17C4 25.5 10 32.2 18 34C26 32.2 32 25.5 32 17V9L18 3Z" fill="url(#pgHeroShieldGrad)" stroke="#60A5FA" stroke-width="1.5" stroke-linejoin="round"/>
-              <path d="M18 5L6 10.2V17C6 24.3 11.2 30.2 18 31.8C24.8 30.2 30 24.3 30 17V10.2L18 5Z" fill="url(#pgHeroGlowGrad)" opacity="0.3"/>
-              <path d="M13 17.5L16.5 21L23 13.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <g id="figure" class="guardly-anim-figure">
+                <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldHero)"/>
+                <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueHero)" stroke="url(#soldierGoldHero)" stroke-width="1.2"/>
+                <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+              </g>
+              <g id="shield" class="guardly-anim-shield">
+                <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueHero)" stroke="url(#soldierGoldHero)" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldHero)" stroke-width="1" opacity="0.6"/>
+              </g>
+              <g id="sword" class="guardly-anim-sword">
+                <path d="M14 26H26" stroke="url(#soldierGoldHero)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
+              </g>
             </svg>
-            <h1 class="display-5 fw-bold text-white mb-0 font-mono" style="letter-spacing: -0.02em;">PhishGuard</h1>
+            <h1 class="display-5 fw-bold text-white mb-0 font-mono" style="letter-spacing: -0.02em;">Guardly</h1>
         </div>
     </section>
 
     <!-- VirusTotal Iconic Tabbed Card Component -->
     <section class="vt-card mx-auto mb-5">
         <!-- VirusTotal 3 Navigation Tabs: FILE | URL | SEARCH -->
-        <div class="vt-tabs d-flex align-items-center justify-content-center border-bottom border-secondary border-opacity-25">
+        <div class="vt-tabs d-flex align-items-center justify-content-center gap-2 p-3 border-bottom border-secondary border-opacity-25">
             <button type="button" class="vt-tab-btn active" id="tabFileBtn" onclick="switchVtTab('file')">
                 <i class="bi bi-file-earmark-arrow-up me-2"></i>FILE
             </button>
@@ -115,10 +127,13 @@
                 <i class="bi bi-globe2 text-primary"></i>
             </div>
             <h2 class="text-white fs-5 fw-bold mb-3 text-center">Search or scan a URL</h2>
-            <div class="vt-input-group mx-auto mb-4" style="max-width: 600px;">
-                <div class="input-group input-group-lg">
-                    <input type="text" class="form-control font-mono fs-6 bg-dark text-white border-secondary" placeholder="http://example.com/phishing-link" id="vtUrlInput">
-                    <button class="btn btn-primary px-4" type="button" onclick="scanVtUrl()"><i class="bi bi-search me-1"></i> Scan</button>
+            <div class="vt-input-group mx-auto mb-4" style="max-width: 680px;">
+                <div class="d-flex flex-column flex-sm-row align-items-stretch gap-2 position-relative">
+                    <div class="position-relative flex-grow-1">
+                        <i class="bi bi-link-45deg text-primary position-absolute top-50 start-0 translate-middle-y ms-3" style="pointer-events: none; z-index: 5; font-size: 1.4rem;"></i>
+                        <input type="text" class="form-control font-mono fs-6 ps-5 rounded-3 py-3" placeholder="http://example.com/phishing-link" id="vtUrlInput">
+                    </div>
+                    <button class="btn btn-primary btn-lg px-4 font-mono fw-bold rounded-3 flex-shrink-0 shadow-sm" type="button" onclick="scanVtUrl()"><i class="bi bi-radar me-1"></i> Scan</button>
                 </div>
             </div>
             <p class="vt-terms-text text-muted small font-mono mb-0 d-block text-center mx-auto" style="max-width: 600px; text-align: center !important;">
@@ -132,10 +147,13 @@
                 <i class="bi bi-search text-primary"></i>
             </div>
             <h2 class="text-white fs-5 fw-bold mb-3 text-center">Search IP address, Domain, or File Hash</h2>
-            <div class="vt-input-group mx-auto mb-4" style="max-width: 600px;">
-                <div class="input-group input-group-lg">
-                    <input type="text" class="form-control font-mono fs-6 bg-dark text-white border-secondary" placeholder="IP, Domain, MD5, SHA-256..." id="vtSearchInput">
-                    <button class="btn btn-primary px-4" type="button" onclick="searchVtIoc()"><i class="bi bi-search me-1"></i> Search</button>
+            <div class="vt-input-group mx-auto mb-4" style="max-width: 680px;">
+                <div class="d-flex flex-column flex-sm-row align-items-stretch gap-2 position-relative">
+                    <div class="position-relative flex-grow-1">
+                        <i class="bi bi-search text-primary position-absolute top-50 start-0 translate-middle-y ms-3" style="pointer-events: none; z-index: 5; font-size: 1.15rem;"></i>
+                        <input type="text" class="form-control font-mono fs-6 ps-5 rounded-3 py-3" placeholder="IP, Domain, MD5, SHA-256..." id="vtSearchInput">
+                    </div>
+                    <button class="btn btn-primary btn-lg px-4 font-mono fw-bold rounded-3 flex-shrink-0 shadow-sm" type="button" onclick="searchVtIoc()"><i class="bi bi-search me-1"></i> Search</button>
                 </div>
             </div>
             <p class="vt-terms-text text-muted small font-mono mb-0 d-block text-center mx-auto" style="max-width: 600px; text-align: center !important;">

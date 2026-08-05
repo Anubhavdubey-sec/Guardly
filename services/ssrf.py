@@ -154,7 +154,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
             path += "?" + parsed.query
 
         headers = {
-            "User-Agent": "PhishGuard-Security-Scanner/2.4 (+https://phishguard.local)",
+            "User-Agent": "Guardly-Security-Scanner/2.4 (+https://guardly.local)",
             "Host": hostname,
             "Accept": "*/*",
         }

@@ -1,20 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Telemetry Logs · PhishGuard{% endblock %}
+{% block title %}Telemetry Logs · Guardly{% endblock %}
 
 {% block content %}
 <div class="history-container">
-    <!-- Page Header -->
-    <div class="page-heading mb-4">
-        <div>
-            <p class="eyebrow mb-1"><i class="bi bi-journal-code me-1"></i> TELEMETRY LOGS</p>
-            <h1 class="h2 fw-bold text-white mb-1">Threat Inspection Archive</h1>
-            <p class="text-muted small mb-0">Search, filter, and review stored email threat investigations and extracted IOCs.</p>
-        </div>
-        <div class="page-heading-actions">
-            {% if can_download %}
-                <a href="{{ url_for('scanner.export_history_csv', **filters) }}" class="btn btn-outline-light btn-sm"><i class="bi bi-download me-1"></i> Export Telemetry Report</a>
-            {% endif %}
+    <!-- Page Header Hero Card -->
+    <div class="soc-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <p class="eyebrow mb-1 text-primary fw-bold font-mono"><i class="bi bi-journal-code me-1"></i> TELEMETRY LOGS</p>
+                <h1 class="h2 fw-bold text-white mb-1">Threat Inspection Archive</h1>
+                <p class="text-muted small mb-0">Search, filter, and review stored email threat investigations and extracted IOCs.</p>
+            </div>
+            <div class="page-heading-actions">
+                {% if can_download %}
+                    <a href="{{ url_for('scanner.export_history_csv', **filters) }}" class="btn btn-outline-light btn-sm shadow-sm"><i class="bi bi-download me-1"></i> Export Telemetry Report</a>
+                {% endif %}
+            </div>
         </div>
     </div>
 

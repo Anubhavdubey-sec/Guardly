@@ -64,7 +64,7 @@ class ScannerRouteTests(unittest.TestCase):
     def test_home_page_opens_public_email_scanner(self):
         response = self.client.get("/", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"PhishGuard", response.data)
+        self.assertIn(b"Guardly", response.data)
         self.assertIn(b"Choose file", response.data)
 
     def test_public_upload_creates_anonymous_record_and_hides_staff_actions(self):

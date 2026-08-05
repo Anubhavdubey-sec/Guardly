@@ -1,13 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}Staff Sign In · PhishGuard{% endblock %}
+{% block title %}Staff Sign In · Guardly{% endblock %}
 
 {% block content %}
 <div class="auth-wrapper py-4 py-md-5 d-flex align-items-center justify-content-center">
     <div class="auth-card mx-auto p-4 p-md-5 rounded-4 shadow-lg border border-secondary border-opacity-25" style="max-width: 440px; width: 100%; box-sizing: border-weight;">
         <div class="text-center mb-4">
-            <div class="auth-brand-orb mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3);">
-                <i class="bi bi-shield-lock-fill text-primary fs-3"></i>
+            <div class="auth-brand-orb mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);">
+                <svg class="guardly-soldier-svg" width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="soldierGoldLogin" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#FBBF24"/>
+                      <stop offset="50%" stop-color="#F59E0B"/>
+                      <stop offset="100%" stop-color="#B45309"/>
+                    </linearGradient>
+                    <linearGradient id="soldierBlueLogin" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#2563EB"/>
+                      <stop offset="100%" stop-color="#1E3A8A"/>
+                    </linearGradient>
+                  </defs>
+                  <g id="figure" class="guardly-anim-figure">
+                    <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldLogin)"/>
+                    <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueLogin)" stroke="url(#soldierGoldLogin)" stroke-width="1.2"/>
+                    <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                  </g>
+                  <g id="shield" class="guardly-anim-shield">
+                    <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueLogin)" stroke="url(#soldierGoldLogin)" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldLogin)" stroke-width="1" opacity="0.6"/>
+                  </g>
+                  <g id="sword" class="guardly-anim-sword">
+                    <path d="M14 26H26" stroke="url(#soldierGoldLogin)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
+                  </g>
+                </svg>
             </div>
             <h1 class="h4 fw-bold text-white mb-1">Staff Operations Portal</h1>
             <p class="text-muted small mb-0 font-mono">AUTHENTICATE CREDENTIALS TO ACCESS DASHBOARD</p>

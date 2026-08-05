@@ -1,19 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Administrator Control Center · PhishGuard{% endblock %}
+{% block title %}Administrator Control Center · Guardly{% endblock %}
 
 {% block content %}
 <div class="admin-dashboard">
-    <!-- Header -->
-    <div class="page-heading mb-4">
-        <div>
-            <p class="eyebrow mb-1"><i class="bi bi-shield-shaded me-1"></i> PLATFORM CONTROL</p>
-            <h1 class="h2 fw-bold text-white mb-1">Administrator Control Center</h1>
-            <p class="text-muted small mb-0">System metrics, role distribution, and real-time security audit trails.</p>
-        </div>
-        <div class="page-heading-actions">
-            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-people me-1"></i> Manage Users</a>
-            <a href="{{ url_for('admin.logs') }}" class="btn btn-primary btn-sm"><i class="bi bi-journal-code me-1"></i> View All Logs</a>
+    <!-- Page Header Hero Card -->
+    <div class="soc-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <p class="eyebrow mb-1 text-primary fw-bold font-mono"><i class="bi bi-shield-shaded me-1"></i> PLATFORM CONTROL</p>
+                <h1 class="h2 fw-bold text-white mb-1">Administrator Control Center</h1>
+                <p class="text-muted small mb-0">System metrics, role distribution, and real-time security audit trails.</p>
+            </div>
+            <div class="page-heading-actions d-flex gap-2">
+                <a href="{{ url_for('admin.users') }}" class="btn btn-outline-light btn-sm shadow-sm"><i class="bi bi-people me-1"></i> Manage Users</a>
+                <a href="{{ url_for('admin.logs') }}" class="btn btn-primary btn-sm shadow-sm"><i class="bi bi-journal-code me-1"></i> View All Logs</a>
+            </div>
         </div>
     </div>
 

@@ -5,20 +5,22 @@
 {% block content %}
 <div class="virustotal-landing-container py-3">
 
-    <!-- Header Section -->
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom border-secondary border-opacity-25">
-        <div>
-            <p class="eyebrow mb-1"><i class="bi bi-globe2 me-1"></i> URL ANALYSIS &amp; TELEMETRY</p>
-            <h1 class="h2 fw-bold text-white mb-1 font-mono text-break">{{ analysis.target_url }}</h1>
-            <p class="text-muted small mb-0">Live HTTP reachability, server banners, brand impersonation, and domain entropy evaluation.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('scanner.scan_url', url=analysis.target_url, format='json') }}" target="_blank" class="btn btn-outline-info btn-sm font-mono">
-                <i class="bi bi-filetype-json me-1"></i> Export JSON
-            </a>
-            <a href="{{ url_for('scanner.upload') }}" class="btn btn-outline-light btn-sm font-mono">
-                <i class="bi bi-arrow-left me-1"></i> New Scan
-            </a>
+    <!-- Header Section Card -->
+    <div class="soc-card p-4 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <p class="eyebrow text-primary mb-1"><i class="bi bi-globe2 me-1"></i> URL ANALYSIS &amp; TELEMETRY</p>
+                <h1 class="h2 fw-bold text-white mb-1 font-mono text-break">{{ analysis.target_url }}</h1>
+                <p class="text-muted small mb-0">Live HTTP reachability, server banners, brand impersonation, and domain entropy evaluation.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('scanner.scan_url', url=analysis.target_url, format='json') }}" target="_blank" class="btn btn-outline-info btn-sm font-mono">
+                    <i class="bi bi-filetype-json me-1"></i> Export JSON
+                </a>
+                <a href="{{ url_for('scanner.upload') }}" class="btn btn-outline-light btn-sm font-mono">
+                    <i class="bi bi-arrow-left me-1"></i> New Scan
+                </a>
+            </div>
         </div>
     </div>
 
@@ -130,8 +132,8 @@
         <div class="row g-3 font-mono small">
             {% for vendor in analysis.vendors %}
                 <div class="col-md-4 col-sm-6">
-                    <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 d-flex align-items-center justify-content-between">
-                        <span class="text-white font-weight-bold">{{ vendor.name }}</span>
+                    <div class="context-card p-3 d-flex align-items-center justify-content-between h-100">
+                        <span class="text-white fw-bold">{{ vendor.name }}</span>
                         <span class="badge {% if vendor.result == 'Passed' %}bg-success bg-opacity-25 text-success{% elif vendor.result == 'Notice' %}bg-info bg-opacity-25 text-info{% else %}bg-warning bg-opacity-25 text-warning{% endif %} border border-secondary border-opacity-25">
                             <i class="{{ vendor.icon }} me-1"></i> {{ vendor.result }}
                         </span>

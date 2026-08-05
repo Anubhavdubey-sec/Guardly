@@ -309,7 +309,7 @@ def export_history_csv():
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=phishguard-scan-history.csv"},
+        headers={"Content-Disposition": "attachment; filename=guardly-scan-history.csv"},
     )
 
 
@@ -342,7 +342,20 @@ def download_pdf_report(scan_id):
         report,
         mimetype="application/pdf",
         as_attachment=True,
-        download_name=f"phishguard-scan-{scan.id}.pdf",
+        download_name=f"guardly-scan-{scan.id}.pdf",
+    )
+
+
+@scanner_bp.route('/scan/<int:scan_id>/pdf', methods=['GET'])
+def download_pdf(scan_id):
+    scan = EmailScan.query.get_or_404(scan_id)
+    pdf_bytes = generate_pdf_report(scan)
+
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"guardly-scan-{scan.id}.pdf",
     )
 
 
