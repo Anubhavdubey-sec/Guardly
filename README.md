@@ -32,6 +32,13 @@ PhishGuard implements production-grade security controls following OWASP Web Sec
 - **Safe Error Pages**: Custom handlers for `400`, `403`, `404`, `413`, and `500` return sanitized HTML/JSON responses without exposing internal Python stack traces.
 - **Audit Event Logging**: Internal application events log security activities without storing sensitive passwords, secret keys, or private tokens.
 
+### 6. Email Delivery Timeline Analysis
+- **RFC 822 Header Path Reconstruction**: Reconstructs the exact chronological mail flow (`scanner/timeline.py`) from initial sender relay to recipient inbox by parsing RFC 822 `Received:` headers.
+- **Inter-Hop Delay Analysis**: Computes delay intervals between consecutive relay hops, flagging timestamp anomalies, out-of-order headers, and clock skew.
+- **Native IP & Relay Classification**: Uses Python's native `ipaddress` module to classify relay IPs as Public, Private, Loopback, Link-Local, Reserved, or IPv6.
+- **Risk Observations**: Identifies private IP relays, duplicate relays, IPv6 usage, and missing timestamp fields as neutral DFIR observations.
+- **Offline Architecture & Limitations**: Operates 100% locally with zero external API calls. Geographic context utilizes local IP lookups (`services/public_lookup.py`), displaying `"Location Unavailable"` when unresolvable locally. Missing or malformed headers default gracefully to `"Unknown"` without raising UI exceptions.
+
 ---
 
 ## 🚀 Quick Start & Deployment

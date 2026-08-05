@@ -1770,119 +1770,680 @@ body.soc-body {
     color: var(--pg-text);
 }
 
-html.light-mode, body.light-mode {
-    --pg-canvas: #f4f6fa;
-    --pg-surface: #ffffff;
-    --pg-surface-raised: #ffffff;
-    --pg-surface-subtle: #f8fafc;
-    --pg-border: rgba(36, 52, 80, 0.15);
-    --pg-border-strong: rgba(63, 91, 150, 0.3);
-    --pg-text: #0f172a;
-    --pg-muted: #475569;
-    --pg-faint: #64748b;
-    --bg-dark: #f4f6fa;
-    --card-bg: #ffffff;
-    --sidebar-bg: #ffffff;
-    --topbar-bg: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #475569;
-    --text-faint: #64748b;
-    --border-color: rgba(36, 52, 80, 0.15);
-    background-color: #f4f6fa !important;
+/* ==========================================
+   ENHANCED LIGHT MODE HIGH-CONTRAST SYSTEM
+   ========================================== */
+
+html.light-mode,
+body.light-mode,
+html[data-bs-theme="light"],
+body[data-bs-theme="light"],
+[data-bs-theme="light"] {
+    --pg-canvas: #f1f5f9 !important;
+    --pg-surface: #ffffff !important;
+    --pg-surface-raised: #ffffff !important;
+    --pg-surface-subtle: #f8fafc !important;
+    --pg-border: #cbd5e1 !important;
+    --pg-border-strong: #94a3b8 !important;
+    --pg-text: #0f172a !important;
+    --pg-muted: #334155 !important;
+    --pg-faint: #64748b !important;
+    --bg-dark: #f1f5f9 !important;
+    --card-bg: #ffffff !important;
+    --sidebar-bg: #ffffff !important;
+    --topbar-bg: #ffffff !important;
+    --text-main: #0f172a !important;
+    --text-muted: #334155 !important;
+    --text-faint: #64748b !important;
+    --border-color: #cbd5e1 !important;
+    background-color: #f1f5f9 !important;
     color: #0f172a !important;
 }
 
+/* Headings & Text Color Contrast */
 html.light-mode h1, html.light-mode h2, html.light-mode h3, html.light-mode h4, html.light-mode h5, html.light-mode h6,
-body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6,
+html[data-bs-theme="light"] h1, html[data-bs-theme="light"] h2, html[data-bs-theme="light"] h3,
+html[data-bs-theme="light"] h4, html[data-bs-theme="light"] h5, html[data-bs-theme="light"] h6,
+html.light-mode h1.text-white, body.light-mode h1.text-white,
+html.light-mode h2.text-white, body.light-mode h2.text-white,
+html.light-mode h3.text-white, body.light-mode h3.text-white,
+html.light-mode h4.text-white, body.light-mode h4.text-white,
+html.light-mode h5.text-white, body.light-mode h5.text-white,
+html.light-mode h6.text-white, body.light-mode h6.text-white,
+html[data-bs-theme="light"] h1.text-white, html[data-bs-theme="light"] h2.text-white,
+html[data-bs-theme="light"] h3.text-white, html[data-bs-theme="light"] h4.text-white,
+html.light-mode strong.text-white, body.light-mode strong.text-white,
+html[data-bs-theme="light"] strong.text-white, html[data-bs-theme="light"] strong,
+html.light-mode span.text-white:not(.btn *):not(.badge *), body.light-mode span.text-white:not(.btn *):not(.badge *),
+html[data-bs-theme="light"] span.text-white:not(.btn *):not(.badge *),
+html.light-mode p.text-white, body.light-mode p.text-white,
+html[data-bs-theme="light"] p.text-white,
+html.light-mode div.text-white:not(.btn *), body.light-mode div.text-white:not(.btn *),
+html[data-bs-theme="light"] div.text-white:not(.btn *),
+html.light-mode .text-white:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning):not(.badge-solid),
+body.light-mode .text-white:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning):not(.badge-solid),
+html[data-bs-theme="light"] .text-white:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning):not(.badge-solid),
+html.light-mode .text-light, body.light-mode .text-light, html[data-bs-theme="light"] .text-light,
+html.light-mode .page-heading h1, body.light-mode .page-heading h1, html[data-bs-theme="light"] .page-heading h1,
+html.light-mode .page-heading h2, body.light-mode .page-heading h2, html[data-bs-theme="light"] .page-heading h2,
+html.light-mode .page-heading p, body.light-mode .page-heading p, html[data-bs-theme="light"] .page-heading p,
+html.light-mode .page-heading strong, body.light-mode .page-heading strong, html[data-bs-theme="light"] .page-heading strong {
     color: #0f172a !important;
 }
 
-html.light-mode .text-white:not(.btn):not(.btn *):not(.badge):not(.badge *):not(.status-pill):not(.status-pill *),
-body.light-mode .text-white:not(.btn):not(.btn *):not(.badge):not(.badge *):not(.status-pill):not(.status-pill *) {
+html.light-mode .page-heading .eyebrow,
+body.light-mode .page-heading .eyebrow,
+html[data-bs-theme="light"] .page-heading .eyebrow,
+html.light-mode .eyebrow,
+body.light-mode .eyebrow,
+html[data-bs-theme="light"] .eyebrow,
+html.light-mode .section-overline,
+body.light-mode .section-overline,
+html[data-bs-theme="light"] .section-overline,
+html.light-mode .case-kicker,
+body.light-mode .case-kicker,
+html[data-bs-theme="light"] .case-kicker {
+    color: #1d4ed8 !important;
+    font-weight: 800 !important;
+}
+
+html.light-mode .text-muted, body.light-mode .text-muted, html[data-bs-theme="light"] .text-muted {
+    color: #334155 !important;
+}
+
+/* Brand Logo & Hero Header in Light Mode */
+html.light-mode .vt-hero h1,
+body.light-mode .vt-hero h1,
+html[data-bs-theme="light"] .vt-hero h1,
+html.light-mode .brand-name,
+body.light-mode .brand-name,
+html[data-bs-theme="light"] .brand-name,
+html.light-mode .brand-logo span,
+body.light-mode .brand-logo span,
+html[data-bs-theme="light"] .brand-logo span,
+html.light-mode .brand-logo,
+body.light-mode .brand-logo,
+html[data-bs-theme="light"] .brand-logo,
+html.light-mode .display-5,
+body.light-mode .display-5,
+html[data-bs-theme="light"] .display-5 {
     color: #0f172a !important;
+}
+
+/* Page Containers in Light Mode */
+html.light-mode .history-container,
+body.light-mode .history-container,
+html[data-bs-theme="light"] .history-container,
+html.light-mode .virustotal-landing-container,
+body.light-mode .virustotal-landing-container,
+html[data-bs-theme="light"] .virustotal-landing-container,
+html.light-mode .scan-result-container,
+body.light-mode .scan-result-container,
+html[data-bs-theme="light"] .scan-result-container,
+html.light-mode .url-result-container,
+body.light-mode .url-result-container,
+html[data-bs-theme="light"] .url-result-container {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+/* Form Inputs & Select Dropdowns in Light Mode */
+html.light-mode .form-control,
+body.light-mode .form-control,
+html[data-bs-theme="light"] .form-control,
+html.light-mode .form-select,
+body.light-mode .form-select,
+html[data-bs-theme="light"] .form-select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+}
+
+html.light-mode .form-control:focus,
+body.light-mode .form-control:focus,
+html[data-bs-theme="light"] .form-control:focus,
+html.light-mode .form-select:focus,
+body.light-mode .form-select:focus,
+html[data-bs-theme="light"] .form-select:focus {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+html.light-mode .form-select option,
+body.light-mode .form-select option,
+html[data-bs-theme="light"] .form-select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+/* Button High Contrast in Light Mode */
+html.light-mode .btn-outline-light,
+body.light-mode .btn-outline-light {
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.light-mode .btn-outline-light:hover,
+body.light-mode .btn-outline-light:hover,
+html.light-mode .btn-outline-light:focus,
+body.light-mode .btn-outline-light:focus,
+html.light-mode .btn-outline-light.active,
+body.light-mode .btn-outline-light.active {
+    color: #ffffff !important;
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
+}
+
+html.light-mode .btn-light,
+body.light-mode .btn-light {
+    color: #0f172a !important;
+    background-color: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Border utilities in Light Mode */
+html.light-mode .border-secondary,
+body.light-mode .border-secondary,
+html.light-mode [class*="border-opacity-"],
+body.light-mode [class*="border-opacity-"] {
+    border-color: #cbd5e1 !important;
+}
+
+/* Auth Cards & Links in Light Mode */
+html.light-mode .auth-card,
+body.light-mode .auth-card {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.light-mode .auth-brand-orb,
+body.light-mode .auth-brand-orb {
+    background: #dbeafe !important;
+    border-color: #bfdbfe !important;
+}
+
+html.light-mode a.table-link,
+body.light-mode a.table-link,
+html.light-mode a.text-white,
+body.light-mode a.text-white {
+    color: #0f172a !important;
+}
+
+html.light-mode a.table-link:hover,
+body.light-mode a.table-link:hover {
+    color: #2563eb !important;
+}
+
+/* VirusTotal Tabs & Dropzone in Light Mode */
+html.light-mode .vt-tabs,
+body.light-mode .vt-tabs {
+    border-bottom-color: #cbd5e1 !important;
+}
+
+html.light-mode .vt-tab-btn,
+body.light-mode .vt-tab-btn {
+    color: #475569 !important;
+}
+
+html.light-mode .vt-tab-btn.active,
+body.light-mode .vt-tab-btn.active {
+    color: #2563eb !important;
+    border-bottom-color: #2563eb !important;
+}
+
+html.light-mode .vt-upload-dropzone,
+body.light-mode .vt-upload-dropzone {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-mode .vt-icon-circle,
+body.light-mode .vt-icon-circle {
+    background: #dbeafe !important;
+    color: #2563eb !important;
+}
+
+html.light-mode .vt-feature-box,
+body.light-mode .vt-feature-box {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+}
+
+html.light-mode .vt-feature-box h3,
+body.light-mode .vt-feature-box h3,
+html.light-mode .vt-feature-box h4,
+body.light-mode .vt-feature-box h4,
+html.light-mode .vt-feature-box p,
+body.light-mode .vt-feature-box p {
+    color: #0f172a !important;
+}
+
+html.light-mode .vt-feature-box .text-muted,
+body.light-mode .vt-feature-box .text-muted {
+    color: #475569 !important;
+}
+
+html.light-mode .vt-feature-box .badge,
+body.light-mode .vt-feature-box .badge {
+    background-color: #f1f5f9 !important;
+    color: #0369a1 !important;
+    border: 1px solid #bae6fd !important;
+}
+
+/* Dashboard & KPI Cards in Light Mode */
+html.light-mode .kpi-card,
+body.light-mode .kpi-card {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light-mode .kpi-label,
+body.light-mode .kpi-label {
+    color: #475569 !important;
+}
+
+html.light-mode .kpi-value,
+body.light-mode .kpi-value {
+    color: #0f172a !important;
+}
+
+html.light-mode .kpi-subtext,
+body.light-mode .kpi-subtext {
+    color: #64748b !important;
+}
+
+html.light-mode .kpi-card .counter-value,
+body.light-mode .kpi-card .counter-value {
+    color: inherit;
+}
+
+html.light-mode .soc-card,
+body.light-mode .soc-card {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light-mode .soc-card-title,
+body.light-mode .soc-card-title {
+    color: #0f172a !important;
+}
+
+html.light-mode .eyebrow,
+body.light-mode .eyebrow {
+    color: #2563eb !important;
+    font-weight: 700 !important;
+}
+
+html.light-mode .count-badge,
+body.light-mode .count-badge {
+    background-color: #e2e8f0 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+html.light-mode .alert-queue-row,
+body.light-mode .alert-queue-row {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+html.light-mode .alert-queue-row:hover,
+body.light-mode .alert-queue-row:hover {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-mode .alert-queue-main strong,
+body.light-mode .alert-queue-main strong {
+    color: #0f172a !important;
+}
+
+html.light-mode .alert-queue-main small,
+body.light-mode .alert-queue-main small {
+    color: #64748b !important;
 }
 
 html.light-mode .text-muted, body.light-mode .text-muted {
     color: #475569 !important;
 }
 
+/* Background Overrides for Subtitles & Surfaces */
 html.light-mode .bg-dark, body.light-mode .bg-dark {
-    background-color: #f1f5f9 !important;
+    background-color: #e2e8f0 !important;
     color: #0f172a !important;
+    border-color: #cbd5e1 !important;
 }
 
 html.light-mode .bg-dark-subtle, body.light-mode .bg-dark-subtle {
-    background-color: #f8fafc !important;
-    color: #0f172a !important;
-}
-
-html.light-mode .card, html.light-mode .soc-card, html.light-mode .auth-card, html.light-mode .upload-hero-card, html.light-mode .stat-card,
-body.light-mode .card, body.light-mode .soc-card, body.light-mode .auth-card, body.light-mode .upload-hero-card, body.light-mode .stat-card {
-    background-color: #ffffff !important;
-    border-color: #e2e8f0 !important;
-    color: #0f172a !important;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
-}
-
-html.light-mode .form-control, html.light-mode .form-select,
-body.light-mode .form-control, body.light-mode .form-select {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-    border-color: #cbd5e1 !important;
-}
-
-html.light-mode .form-control::placeholder, body.light-mode .form-control::placeholder {
-    color: #94a3b8 !important;
-}
-
-html.light-mode .table, html.light-mode .soc-table, html.light-mode .table-dark,
-body.light-mode .table, body.light-mode .soc-table, body.light-mode .table-dark {
-    --bs-table-bg: #ffffff;
-    --bs-table-color: #0f172a;
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-    border-color: #e2e8f0 !important;
-}
-
-html.light-mode .soc-table th, body.light-mode .soc-table th,
-html.light-mode table th, body.light-mode table th {
-    background-color: #f8fafc !important;
-    color: #475569 !important;
-    border-bottom-color: #cbd5e1 !important;
-}
-
-html.light-mode .soc-table td, body.light-mode .soc-table td,
-html.light-mode table td, body.light-mode table td {
-    color: #1e293b !important;
-    border-bottom-color: #f1f5f9 !important;
-}
-
-html.light-mode .email-body, body.light-mode .email-body {
-    background-color: #f8fafc !important;
-    color: #1e293b !important;
-    border-color: #e2e8f0 !important;
-}
-
-html.light-mode .raw-headers, body.light-mode .raw-headers {
     background-color: #f1f5f9 !important;
     color: #0f172a !important;
-    border-color: #cbd5e1 !important;
-}
-
-html.light-mode .public-navbar, body.light-mode .public-navbar {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-bottom-color: #e2e8f0 !important;
-}
-
-html.light-mode .soc-sidebar, body.light-mode .soc-sidebar,
-html.light-mode .soc-topbar, body.light-mode .soc-topbar {
-    background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
 }
 
-html.light-mode .public-footer, body.light-mode .public-footer {
-    border-top-color: #e2e8f0 !important;
+/* Comprehensive Container & Card Overrides */
+html.light-mode .card,
+html.light-mode .soc-card,
+html.light-mode .auth-card,
+html.light-mode .upload-hero-card,
+html.light-mode .stat-card,
+html.light-mode .investigation-card,
+html.light-mode .context-card,
+html.light-mode .vt-card,
+html.light-mode .indicator-tile,
+html.light-mode .finding-row,
+html.light-mode .score-card,
+html.light-mode .provider-card-grid article,
+html.light-mode .relationship-card,
+html.light-mode .timeline-section,
+html.light-mode .timeline-hop-card .card,
+html.light-mode .quiet-state,
+body.light-mode .card,
+body.light-mode .soc-card,
+body.light-mode .auth-card,
+body.light-mode .upload-hero-card,
+body.light-mode .stat-card,
+body.light-mode .investigation-card,
+body.light-mode .context-card,
+body.light-mode .vt-card,
+body.light-mode .indicator-tile,
+body.light-mode .finding-row,
+body.light-mode .score-card,
+body.light-mode .provider-card-grid article,
+body.light-mode .relationship-card,
+body.light-mode .timeline-section,
+body.light-mode .timeline-hop-card .card,
+body.light-mode .quiet-state {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Specific Sub-Panels & Callouts */
+html.light-mode .timeline-summary-bar,
+body.light-mode .timeline-summary-bar,
+html.light-mode .indicator-tile-top,
+body.light-mode .indicator-tile-top,
+html.light-mode .header-table,
+body.light-mode .header-table,
+html.light-mode .email-body,
+body.light-mode .email-body,
+html.light-mode .raw-headers,
+body.light-mode .raw-headers {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+/* Form Inputs & Selects */
+html.light-mode .form-control,
+html.light-mode .form-select,
+body.light-mode .form-control,
+body.light-mode .form-select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-mode .form-control:focus,
+html.light-mode .form-select:focus,
+body.light-mode .form-control:focus,
+body.light-mode .form-select:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+html.light-mode .form-control::placeholder,
+body.light-mode .form-control::placeholder {
     color: #64748b !important;
+}
+
+/* Tables & Table-Dark Comprehensive Overrides */
+html.light-mode .table,
+body.light-mode .table,
+html[data-bs-theme="light"] .table,
+body[data-bs-theme="light"] .table,
+html.light-mode .soc-table,
+body.light-mode .soc-table,
+html[data-bs-theme="light"] .soc-table,
+body[data-bs-theme="light"] .soc-table,
+html.light-mode .table-dark,
+body.light-mode .table-dark,
+html[data-bs-theme="light"] .table-dark,
+body[data-bs-theme="light"] .table-dark,
+[data-bs-theme="light"] .table-dark {
+    --bs-table-bg: #ffffff !important;
+    --bs-table-color: #0f172a !important;
+    --bs-table-hover-bg: #f8fafc !important;
+    --bs-table-hover-color: #0f172a !important;
+    --bs-table-striped-bg: #f8fafc !important;
+    --bs-table-striped-color: #0f172a !important;
+    --bs-table-active-bg: #f1f5f9 !important;
+    --bs-table-active-color: #0f172a !important;
+    --bs-table-border-color: #cbd5e1 !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-mode .table-dark > *,
+body.light-mode .table-dark > *,
+html[data-bs-theme="light"] .table-dark > *,
+html.light-mode .table-dark > * > *,
+body.light-mode .table-dark > * > *,
+html[data-bs-theme="light"] .table-dark > * > *,
+html.light-mode .table-dark > * > * > *,
+body.light-mode .table-dark > * > * > *,
+html[data-bs-theme="light"] .table-dark > * > * > * {
+    background-color: transparent !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-mode .soc-table th,
+body.light-mode .soc-table th,
+html[data-bs-theme="light"] .soc-table th,
+html.light-mode table th,
+body.light-mode table th,
+html[data-bs-theme="light"] table th,
+html.light-mode .table-dark th,
+body.light-mode .table-dark th,
+html[data-bs-theme="light"] .table-dark th {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    font-weight: 700 !important;
+}
+
+html.light-mode .soc-table td,
+body.light-mode .soc-table td,
+html[data-bs-theme="light"] .soc-table td,
+html.light-mode table td,
+body.light-mode table td,
+html[data-bs-theme="light"] table td,
+html.light-mode .table-dark td,
+body.light-mode .table-dark td,
+html[data-bs-theme="light"] .table-dark td,
+html.light-mode .soc-table-row td,
+body.light-mode .soc-table-row td,
+html[data-bs-theme="light"] .soc-table-row td {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.light-mode .soc-table tr:hover,
+body.light-mode .soc-table tr:hover,
+html[data-bs-theme="light"] .soc-table tr:hover,
+html.light-mode table tr:hover,
+body.light-mode table tr:hover,
+html[data-bs-theme="light"] table tr:hover,
+html.light-mode .table-dark tr:hover,
+body.light-mode .table-dark tr:hover,
+html[data-bs-theme="light"] .table-dark tr:hover,
+html.light-mode .soc-table-row:hover td,
+body.light-mode .soc-table-row:hover td,
+html[data-bs-theme="light"] .soc-table-row:hover td {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+/* Code & Monospace Formatting */
+html.light-mode code,
+body.light-mode code,
+html.light-mode pre,
+body.light-mode pre,
+html.light-mode .font-mono:not(.badge),
+body.light-mode .font-mono:not(.badge) {
+    color: #0f172a !important;
+}
+
+/* Navigation & Topbar */
+html.light-mode .public-navbar,
+body.light-mode .public-navbar,
+html.light-mode .soc-topbar,
+body.light-mode .soc-topbar {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light-mode .soc-sidebar,
+body.light-mode .soc-sidebar {
+    background-color: #f8fafc !important;
+    border-right: 1px solid #cbd5e1 !important;
+}
+
+html.light-mode .topbar-search .search-input,
+body.light-mode .topbar-search .search-input {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+html.light-mode .topbar-search .search-input:focus,
+body.light-mode .topbar-search .search-input:focus {
+    background-color: #ffffff !important;
+    border-color: #2563eb !important;
+}
+
+html.light-mode .topbar-search .search-icon,
+body.light-mode .topbar-search .search-icon {
+    color: #64748b !important;
+}
+
+html.light-mode .search-kbd,
+body.light-mode .search-kbd {
+    background-color: #e2e8f0 !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* High Contrast Badges in Light Mode */
+html.light-mode .badge.bg-primary-subtle,
+body.light-mode .badge.bg-primary-subtle {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+html.light-mode .badge.bg-warning-subtle,
+body.light-mode .badge.bg-warning-subtle {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fde68a !important;
+}
+
+html.light-mode .badge.bg-danger-subtle,
+body.light-mode .badge.bg-danger-subtle {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fca5a5 !important;
+}
+
+html.light-mode .badge.bg-info-subtle,
+body.light-mode .badge.bg-info-subtle {
+    background-color: #e0f2fe !important;
+    color: #075985 !important;
+    border: 1px solid #bae6fd !important;
+}
+
+html.light-mode .badge.bg-secondary-subtle,
+body.light-mode .badge.bg-secondary-subtle,
+html.light-mode .badge.bg-dark,
+body.light-mode .badge.bg-dark {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Score Ring & Overview Cards */
+html.light-mode .score-card,
+body.light-mode .score-card {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+html.light-mode .score-copy h2,
+body.light-mode .score-copy h2 {
+    color: #0f172a !important;
+}
+
+html.light-mode .score-copy p,
+body.light-mode .score-copy p {
+    color: #334155 !important;
+}
+
+html.light-mode .score-stats > div,
+body.light-mode .score-stats > div {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+html.light-mode .score-stats span,
+body.light-mode .score-stats span {
+    color: #64748b !important;
+}
+
+html.light-mode .score-stats strong,
+body.light-mode .score-stats strong {
+    color: #0f172a !important;
+}
+
+html.light-mode .section-overline,
+body.light-mode .section-overline {
+    color: #2563eb !important;
+    font-weight: 700 !important;
+}
+
+/* Footer */
+html.light-mode .public-footer,
+body.light-mode .public-footer {
+    border-top: 1px solid #cbd5e1 !important;
+    color: #64748b !important;
+    background-color: #ffffff !important;
 }
 
 .soc-sidebar {
@@ -3364,9 +3925,9 @@ body.light-mode .delivery-timeline-flow::before {
 }
 
 .vt-feature-box {
-    background: #111A2E !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 12px !important;
+    background: #111A2E;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
     transition: border-color 200ms ease;
 }
 
@@ -3408,4 +3969,248 @@ code, .font-mono, .text-break, .table-link, .context-list dd, .case-artifact str
 
 .soc-table td.font-mono, .soc-table td.text-break {
     white-space: normal;
+}
+
+/* ==========================================================================
+   MASTER ENTERPRISE RESPONSIVE DESIGN SYSTEM (320px - 1920px+)
+   ========================================================================== */
+
+/* 1. Global Viewport & Overflow Protection */
+html, body {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    position: relative;
+    box-sizing: border-box;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+img, svg, video, canvas, iframe, pre, code {
+    max-width: 100% !important;
+    height: auto;
+}
+
+p, span, h1, h2, h3, h4, h5, h6, td, th, a, li, label, div, code, pre {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* 2. Fluid Responsive Typography */
+h1, .display-5, .hero-title-minimal {
+    font-size: clamp(1.4rem, 3.5vw, 2.25rem) !important;
+}
+h2, .page-heading {
+    font-size: clamp(1.2rem, 2.8vw, 1.75rem) !important;
+}
+h3, .card-title-lg {
+    font-size: clamp(1.05rem, 2.2vw, 1.35rem) !important;
+}
+
+/* 3. Mobile Slide-in Drawer Sidebar & Backdrop Overlay */
+.sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.sidebar-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+@media (max-width: 991.98px) {
+    .soc-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        z-index: 1050 !important;
+        width: 280px !important;
+        max-width: 85vw !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 0 35px rgba(0, 0, 0, 0.6) !important;
+    }
+    
+    .soc-sidebar.show {
+        transform: translateX(0) !important;
+    }
+    
+    .soc-main-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .soc-topbar {
+        left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* 4. Desktop & Laptop Layout Adjustments (1200px - 1920px+) */
+@media (min-width: 1400px) {
+    .page-container {
+        max-width: 1540px !important;
+        margin-inline: auto !important;
+    }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+    .page-container {
+        max-width: 100% !important;
+        padding-inline: 1.5rem !important;
+    }
+}
+
+/* 5. Small Laptop Breakpoint (992px - 1199.98px) */
+@media (max-width: 1199.98px) {
+    .report-workspace {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .landing-metrics-strip {
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: center;
+    }
+    .metric-divider {
+        display: none;
+    }
+}
+
+/* 6. Tablet Breakpoint (768px - 991.98px) */
+@media (max-width: 991.98px) {
+    .soc-content, .public-content {
+        padding: 1rem !important;
+    }
+    .case-header {
+        flex-direction: column !alignment;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+    }
+    .case-actions {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+    }
+    .case-actions .btn {
+        flex: 1 1 auto;
+        min-width: 120px;
+    }
+    .report-context-panel {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+    }
+    .vt-feature-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .kpi-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* 7. Mobile Breakpoint (576px - 767.98px) */
+@media (max-width: 767.98px) {
+    .soc-topbar {
+        padding-inline: 0.75rem !important;
+    }
+    .soc-content, .public-content {
+        padding: 0.75rem !important;
+    }
+    .case-overview-strip {
+        grid-template-columns: 1fr !important;
+    }
+    .case-overview-strip > div {
+        border-right: 0 !important;
+        border-bottom: 1px solid var(--pg-border) !important;
+    }
+    .case-overview-strip > div:last-child {
+        border-bottom: 0 !important;
+    }
+    .score-card {
+        grid-template-columns: 1fr !important;
+        text-align: center;
+        justify-items: center;
+    }
+    .score-stats {
+        grid-template-columns: repeat(3, 1fr) !important;
+        width: 100%;
+    }
+    .vt-feature-cards {
+        grid-template-columns: 1fr !important;
+    }
+    .vt-tabs {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+    }
+    .vt-tabs .nav-link {
+        white-space: nowrap !important;
+        flex-shrink: 0;
+    }
+    
+    /* Touch target size compliance for mobile */
+    .btn, .form-control, .form-select, .nav-link {
+        min-height: 44px;
+    }
+    .btn-sm {
+        min-height: 36px;
+    }
+
+    /* Email Delivery Timeline Mobile Optimization */
+    .timeline-hop-card, .timeline-hop-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+    .timeline-hop-badge {
+        width: auto !important;
+        align-self: flex-start;
+    }
+}
+
+/* 8. Small Mobile Breakpoint (<576px / 320px+) */
+@media (max-width: 575.98px) {
+    .score-stats {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem;
+    }
+    .score-stats > div {
+        padding: 0.4rem 0;
+        border-bottom: 1px dashed var(--pg-border);
+    }
+    .score-stats > div:last-child {
+        border-bottom: 0;
+    }
+    .topbar-search {
+        display: none !important;
+    }
+    .user-avatar-badge {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.85rem !important;
+    }
+    .feature-chips-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .landing-metrics-strip {
+        padding: 1rem !important;
+    }
+    .empty-state {
+        padding: 2rem 1rem !important;
+    }
 }

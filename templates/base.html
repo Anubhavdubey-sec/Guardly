@@ -3,26 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}PhishGuard - Offline Enterprise Email Investigation Platform{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/glass-theme.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         (function() {
-            const savedTheme = localStorage.getItem('phishguard-theme');
-            if (savedTheme === 'light') {
-                document.documentElement.setAttribute('data-bs-theme', 'light');
-                document.documentElement.classList.add('light-mode');
-            } else {
+            {% if current_user and current_user.role in ['admin', 'analyst'] %}
                 document.documentElement.setAttribute('data-bs-theme', 'dark');
                 document.documentElement.classList.remove('light-mode');
-            }
+            {% else %}
+                const savedTheme = localStorage.getItem('phishguard-theme');
+                if (savedTheme === 'light') {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    document.documentElement.classList.add('light-mode');
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    document.documentElement.classList.remove('light-mode');
+                }
+            {% endif %}
         })();
     </script>
 </head>
 <body class="soc-body">
+    <!-- Ambient Animated Aurora Wallpaper -->
+    <div class="ambient-wallpaper-container" aria-hidden="true">
+        <div class="aurora-orb aurora-1"></div>
+        <div class="aurora-orb aurora-2"></div>
+        <div class="aurora-orb aurora-3"></div>
+        <div class="wallpaper-noise"></div>
+        <div class="wallpaper-vignette"></div>
+    </div>
+
     <!-- Initial Page Open Animated Logo Splash Screen -->
     <div id="phishguardSplash" class="splash-screen-overlay" aria-hidden="true">
         <div class="splash-content text-center">
@@ -110,6 +126,12 @@
             const sidebar = document.getElementById('socSidebar');
             
             const applyTheme = (theme) => {
+                {% if current_user and current_user.role in ['admin', 'analyst'] %}
+                    document.body.classList.remove('light-mode');
+                    document.documentElement.classList.remove('light-mode');
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    return;
+                {% endif %}
                 const isLight = theme === 'light';
                 document.body.classList.toggle('light-mode', isLight);
                 document.documentElement.classList.toggle('light-mode', isLight);
@@ -136,11 +158,31 @@
                 setSidebarState(true);
             }
             collapseToggle?.addEventListener('click', () => setSidebarState(!document.body.classList.contains('sidebar-collapsed')));
+
+            const closeBtn = document.getElementById('sidebarCloseBtn');
+            let backdrop = document.getElementById('sidebarBackdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'sidebarBackdrop';
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+            }
+
+            const closeSidebar = () => {
+                sidebar?.classList.remove('show');
+                backdrop?.classList.remove('show');
+            };
+
             if (toggle && sidebar) {
-                toggle.addEventListener('click', () => {
-                    sidebar.classList.toggle('show');
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show', Boolean(isOpen));
                 });
             }
+
+            closeBtn?.addEventListener('click', closeSidebar);
+            backdrop?.addEventListener('click', closeSidebar);
 
             const currentSavedTheme = localStorage.getItem('phishguard-theme') || 'dark';
             applyTheme(currentSavedTheme);

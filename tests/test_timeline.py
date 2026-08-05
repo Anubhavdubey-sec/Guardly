@@ -47,13 +47,13 @@ class TimelineAnalysisTests(unittest.TestCase):
 
     def test_single_received_header_parsing(self):
         header = (
-            "from mail.example.com (mail.example.com [198.51.100.10]) "
+            "from mail.example.com (mail.example.com [172.217.1.1]) "
             "by mx.google.com with ESMTP id 12345; Wed, 5 Aug 2026 01:23:45 +0000"
         )
         hop = parse_received_header(header)
         self.assertIsNotNone(hop)
         self.assertEqual(hop.from_host, "mail.example.com")
-        self.assertEqual(hop.from_ip, "198.51.100.10")
+        self.assertEqual(hop.from_ip, "172.217.1.1")
         self.assertEqual(hop.by_host, "mx.google.com")
         self.assertEqual(hop.protocol, "ESMTP")
         self.assertEqual(hop.ip_type, "Public IP")

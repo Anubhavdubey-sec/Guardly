@@ -1,7 +1,7 @@
 <header class="soc-topbar">
     <div class="d-flex align-items-center justify-content-between page-container h-100">
         <div class="d-flex align-items-center gap-3 min-w-0">
-            <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-md-none" type="button" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+            <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-lg-none" type="button" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
             <a class="topbar-workspace d-none d-xl-flex align-items-center gap-2 text-decoration-none" href="{{ url_for('auth.dashboard') }}">
                 <i class="bi bi-grid-1x2-fill"></i><span>Investigation workspace</span>
             </a>
@@ -22,9 +22,6 @@
                     <i class="bi bi-bell"></i><span class="notification-badge"></span>
                 </button>
             </div>
-            <button id="themeToggle" class="btn btn-icon btn-sm topbar-icon-control" type="button" title="Use light mode" aria-label="Toggle dark mode" aria-pressed="false">
-                <i class="bi bi-sun"></i>
-            </button>
             {% if current_user %}
                 <div class="topbar-user-profile d-flex align-items-center gap-2 ms-1">
                     <div class="user-avatar-badge">{{ current_user.username[0]|upper }}</div>
@@ -33,6 +30,7 @@
                         <span class="user-role font-mono text-uppercase">{{ current_user.role }}</span>
                     </div>
                     <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline ms-1">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Sign out" aria-label="Sign out"><i class="bi bi-box-arrow-right"></i></button>
                     </form>
                 </div>

@@ -118,7 +118,9 @@ def _classify_ip(ip_str: Optional[str]) -> Tuple[str, bool]:
         or ip_obj.is_unspecified
     )
 
-    if ip_obj.is_loopback:
+    if isinstance(ip_obj, ipaddress.IPv6Address):
+        return "IPv6", is_priv
+    elif ip_obj.is_loopback:
         return "Loopback", True
     elif ip_obj.is_link_local:
         return "Link-Local", True
@@ -126,8 +128,6 @@ def _classify_ip(ip_str: Optional[str]) -> Tuple[str, bool]:
         return "Reserved", True
     elif ip_obj.is_private:
         return "Private IP", True
-    elif isinstance(ip_obj, ipaddress.IPv6Address):
-        return "IPv6", is_priv
     else:
         return "Public IP", False
 

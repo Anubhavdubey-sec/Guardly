@@ -12,13 +12,14 @@ METADATA_SUBNETS = [
 
 BLOCKED_HOSTNAMES = {"localhost", "localhost.localdomain", "broadcasthost"}
 BLOCKED_SCHEMES = {"file", "ftp", "gopher", "dict", "ldap", "jar", "tftp", "data"}
+INTERNAL_TLDS = (".local", ".internal", ".lan", ".home", ".corp", ".private", ".intranet")
 
 
 def is_ip_private_or_internal(ip_val):
     """
     Enterprise-grade IP validation using Python's native ipaddress module.
-    Blocks RFC1918, loopback, link-local, multicast, cloud metadata (169.254.169.254),
-    IPv6 private/local subnets, and unroutable ranges.
+    Blocks RFC1918, loopback, link-local, reserved, multicast, unspecified,
+    cloud metadata (169.254.169.254), IPv6 private/local subnets, and unroutable ranges.
     """
     if not ip_val:
         return False
@@ -49,10 +50,19 @@ def is_ip_private_or_internal(ip_val):
     return False
 
 
-def validate_url_ssrf(url_str):
+def validate_url_ssrf(url_str, retries=1):
     """
-    Validate a URL to prevent SSRF vulnerabilities.
-    Returns (is_valid: bool, reason: str, resolved_ip: str or None).
+    Validate a URL to prevent SSRF vulnerabilities and DNS-rebinding attacks.
+    Returns (is_valid: bool, reason: str, pinned_ip: str or None).
+
+    Guarantees:
+    1. Scheme must be http or https.
+    2. Hostname must not be blocked (localhost, .local, etc.).
+    3. Hostname is resolved during validation.
+    4. EVERY resolved IP address is validated against restricted internal ranges.
+    5. If any resolved IP is internal/private, validation fails immediately.
+    6. If resolution succeeds, a validated public IP is pinned and returned.
+    7. If resolution fails, validation fails (pinned_ip is None), preventing subsequent network requests.
     """
     if not url_str or not isinstance(url_str, str):
         return False, "URL is missing or invalid.", None
@@ -71,10 +81,10 @@ def validate_url_ssrf(url_str):
     if not hostname:
         return False, "URL contains no hostname.", None
 
-    if hostname in BLOCKED_HOSTNAMES or hostname.endswith((".local", ".internal", ".lan", ".home")):
+    if hostname in BLOCKED_HOSTNAMES or hostname.endswith(INTERNAL_TLDS):
         return False, f"Host '{hostname}' is an internal domain.", None
 
-    # Check if host is a direct IP string
+    # Check if hostname is already a literal IP address (IPv4 or IPv6)
     try:
         ip_obj = ipaddress.ip_address(hostname)
         if is_ip_private_or_internal(ip_obj):
@@ -83,19 +93,28 @@ def validate_url_ssrf(url_str):
     except ValueError:
         pass
 
-    # Resolve domain hostnames safely via socket getaddrinfo
-    try:
-        addr_info = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-    except socket.gaierror:
-        # Domain does not resolve — allow heuristic analysis without blocking
-        return True, "Unresolvable domain (allowed for local heuristic evaluation).", None
-    except Exception as err:
-        return False, f"DNS resolution error: {err}", None
+    # Resolve domain hostnames via socket getaddrinfo with retry support
+    addr_info = None
+    last_err = None
+    for attempt in range(max(1, retries + 1)):
+        try:
+            addr_info = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            if addr_info:
+                break
+        except socket.gaierror as err:
+            last_err = err
+        except Exception as err:
+            return False, f"DNS resolution error: {err}", None
+
+    if not addr_info:
+        return False, f"Unresolvable domain (DNS lookup failed: {last_err or 'No address found'}).", None
 
     resolved_ips = []
     for family, socktype, proto, canonname, sockaddr in addr_info:
         ip_str = sockaddr[0]
-        resolved_ips.append(ip_str)
+        if ip_str not in resolved_ips:
+            resolved_ips.append(ip_str)
+
         try:
             ip_obj = ipaddress.ip_address(ip_str)
             if is_ip_private_or_internal(ip_obj):
@@ -104,13 +123,17 @@ def validate_url_ssrf(url_str):
             return False, f"Invalid IP resolution '{ip_str}'.", None
 
     primary_ip = resolved_ips[0] if resolved_ips else None
+    if not primary_ip:
+        return False, f"Domain '{hostname}' did not produce a valid IP destination.", None
+
     return True, "Valid public domain target.", primary_ip
 
 
 def safe_http_get(url_str, timeout=2.5, max_redirects=3):
     """
-    Perform a safe HTTP/HTTPS GET request with IP-pinning (defeating DNS-rebinding attacks),
-    enabled TLS certificate verification, and manual per-hop redirect validation.
+    Perform a safe HTTP/HTTPS GET request with absolute IP-pinning,
+    defeating DNS-rebinding attacks, enforcing TLS certificate verification,
+    and validating per-hop redirects.
 
     Returns (status_code: int, response_body: str, final_url: str, server_banner: str, content_type: str).
     """
@@ -119,7 +142,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
 
     while redirect_count <= max_redirects:
         is_valid, reason, pinned_ip = validate_url_ssrf(current_url)
-        if not is_valid:
+        if not is_valid or not pinned_ip:
             raise ValueError(f"SSRF Firewall Blocked Target: {reason}")
 
         parsed = urllib.parse.urlparse(current_url)
@@ -136,14 +159,12 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
             "Accept": "*/*",
         }
 
-        # IP Pinning connection logic: connect to pinned_ip directly if available
-        connect_target = pinned_ip if pinned_ip else hostname
-
+        # IP Pinning: Use pinned_ip directly for the socket connection to eliminate DNS rebinding
         conn = None
         try:
             if scheme == "https":
                 ssl_ctx = ssl.create_default_context()
-                sock = socket.create_connection((connect_target, port), timeout=timeout)
+                sock = socket.create_connection((pinned_ip, port), timeout=timeout)
                 try:
                     ssl_sock = ssl_ctx.wrap_socket(sock, server_hostname=hostname)
                 except (ssl.SSLCertVerificationError, ssl.SSLError, ssl.CertificateError) as cert_err:
@@ -153,7 +174,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                 conn = http.client.HTTPSConnection(hostname, port=port, timeout=timeout)
                 conn.sock = ssl_sock
             else:
-                sock = socket.create_connection((connect_target, port), timeout=timeout)
+                sock = socket.create_connection((pinned_ip, port), timeout=timeout)
                 conn = http.client.HTTPConnection(hostname, port=port, timeout=timeout)
                 conn.sock = sock
 
@@ -164,7 +185,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
             server_banner = resp_headers.get("server") or resp_headers.get("Server") or "Generic Web Server"
             content_type = resp_headers.get("content-type") or resp_headers.get("Content-Type") or "text/html"
 
-            # Check for HTTP redirect status codes
+            # Per-hop redirect handling
             if status in (301, 302, 303, 307, 308):
                 location = resp_headers.get("location") or resp_headers.get("Location")
                 conn.close()
@@ -173,8 +194,8 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
 
                 redirect_url = urllib.parse.urljoin(current_url, location)
                 # Re-validate redirect target URL and IP before following hop!
-                is_red_valid, red_reason, _red_ip = validate_url_ssrf(redirect_url)
-                if not is_red_valid:
+                is_red_valid, red_reason, red_ip = validate_url_ssrf(redirect_url)
+                if not is_red_valid or not red_ip:
                     raise ValueError(f"Blocked SSRF Redirect Target ({red_reason})")
 
                 current_url = redirect_url
@@ -197,3 +218,4 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
             raise ValueError(f"Connection Failed ({err})")
 
     raise ValueError("Exceeded Maximum Allowed Redirects")
+

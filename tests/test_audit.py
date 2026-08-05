@@ -21,7 +21,7 @@ class AuditLoggingServiceTests(unittest.TestCase):
             {
                 "TESTING": True,
                 "SECRET_KEY": "test-secret",
-                "SQLALCHEMY_DATABASE_URI": f"sqlite:///{root}/test.db",
+                "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
                 "PUBLIC_LOOKUPS_ENABLED": False,
             }
         )

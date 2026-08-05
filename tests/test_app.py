@@ -22,7 +22,7 @@ class ScannerRouteTests(unittest.TestCase):
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
                 "SECRET_KEY": "test-secret",
-                "SQLALCHEMY_DATABASE_URI": f"sqlite:///{root}/test.db",
+                "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
                 "UPLOAD_FOLDER": os.path.join(self.temp_directory.name, "uploads"),
                 "PUBLIC_LOOKUPS_ENABLED": False,
             }

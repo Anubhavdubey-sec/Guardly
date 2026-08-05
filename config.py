@@ -34,13 +34,15 @@ class Config:
             rel_path = _db_url.replace("sqlite:///", "")
             abs_db_path = os.path.abspath(os.path.join(BASE_DIR, rel_path))
             os.makedirs(os.path.dirname(abs_db_path), exist_ok=True)
-            SQLALCHEMY_DATABASE_URI = f"sqlite:///{abs_db_path.replace('\\', '/')}"
+            normalized_abs_path = abs_db_path.replace("\\", "/")
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{normalized_abs_path}"
         else:
             SQLALCHEMY_DATABASE_URI = _db_url
     else:
         db_path = os.path.abspath(os.path.join(BASE_DIR, "database", "users.db"))
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_path.replace('\\', '/')}"
+        normalized_db_path = db_path.replace("\\", "/")
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{normalized_db_path}"
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     _auto_create_env = os.getenv("AUTO_CREATE_SCHEMA") or os.getenv("PHISHING_DETECTOR_AUTO_CREATE_SCHEMA") or "True"

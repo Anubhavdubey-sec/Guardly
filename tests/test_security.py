@@ -1,5 +1,6 @@
 import io
 import os
+import socket
 import sys
 import tempfile
 import unittest
@@ -139,6 +140,59 @@ class SecurityHardeningTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             safe_http_get("http://169.254.169.254/latest/meta-data/")
         self.assertIn("SSRF Firewall Blocked Target", str(ctx.exception))
+
+    def test_ssrf_hardened_ipv6_unresolvable_and_dns_rebinding(self):
+        from unittest.mock import patch, MagicMock
+        from services.ssrf import is_ip_private_or_internal, validate_url_ssrf, safe_http_get
+
+        # 1. IPv6 Validation Tests
+        self.assertTrue(is_ip_private_or_internal("::1"))
+        self.assertTrue(is_ip_private_or_internal("fe80::1"))
+        self.assertTrue(is_ip_private_or_internal("fd00::1"))
+        self.assertFalse(is_ip_private_or_internal("2607:f8b0:4005:805::200e"))
+
+        # 2. Private IPv4/IPv6 & Internal TLDs in validate_url_ssrf
+        self.assertFalse(validate_url_ssrf("http://192.168.1.1/")[0])
+        self.assertFalse(validate_url_ssrf("http://10.0.0.1/")[0])
+        self.assertFalse(validate_url_ssrf("http://172.16.0.1/")[0])
+        self.assertFalse(validate_url_ssrf("http://[::1]/")[0])
+        self.assertFalse(validate_url_ssrf("http://[fe80::1]/")[0])
+        self.assertFalse(validate_url_ssrf("http://server.local/")[0])
+        self.assertFalse(validate_url_ssrf("http://server.internal/")[0])
+
+        # 3. Unresolvable Hostnames
+        is_valid, reason, pinned_ip = validate_url_ssrf("http://nonexistent-domain-99999.invalid/")
+        self.assertFalse(is_valid)
+        self.assertIsNone(pinned_ip)
+
+        # safe_http_get on unresolvable host must raise ValueError without socket connection
+        with self.assertRaises(ValueError) as ctx:
+            safe_http_get("http://nonexistent-domain-99999.invalid/")
+        self.assertIn("SSRF Firewall Blocked Target", str(ctx.exception))
+
+        # 4. DNS Rebinding Pinning Verification
+        # Mock getaddrinfo returning a valid public IP 93.184.216.34 for example.org
+        mock_addr = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))]
+        with patch("socket.getaddrinfo", return_value=mock_addr) as mock_gai:
+            with patch("socket.create_connection") as mock_conn:
+                mock_sock = MagicMock()
+                mock_conn.return_value = mock_sock
+                # Mock http.client response
+                with patch("http.client.HTTPConnection") as mock_http_cls:
+                    mock_conn_inst = MagicMock()
+                    mock_http_cls.return_value = mock_conn_inst
+                    mock_resp = MagicMock()
+                    mock_resp.status = 200
+                    mock_resp.getheaders.return_value = [("Content-Type", "text/html")]
+                    mock_resp.read.return_value = b"OK"
+                    mock_conn_inst.getresponse.return_value = mock_resp
+
+                    status, body, final_url, banner, ctype = safe_http_get("http://example.org/test")
+                    
+                    # Verify socket.create_connection was called directly with pinned_ip ("93.184.216.34", 80)
+                    mock_conn.assert_called_once_with(("93.184.216.34", 80), timeout=2.5)
+                    # Verify getaddrinfo was only called once during validation, not during connection
+                    self.assertEqual(mock_gai.call_count, 1)
 
     def test_login_rate_limiting_blocks_brute_force_attempts(self):
         from services.limiter import limiter
