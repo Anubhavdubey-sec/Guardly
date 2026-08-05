@@ -1,12 +1,12 @@
-# PhishGuard · Enterprise Email Security & Threat Intelligence Platform
+# Guardly · Enterprise Email Security & Threat Intelligence Platform
 
-PhishGuard is a high-performance, portfolio-grade Flask cybersecurity application designed for email threat inspection, link verification, indicator of compromise (IOC) extraction, and automated SOC report generation.
+Guardly is a high-performance, portfolio-grade Flask cybersecurity application designed for email threat inspection, link verification, indicator of compromise (IOC) extraction, and automated SOC report generation.
 
 ---
 
 ## 🛡️ Implemented Security Architecture & Protections
 
-PhishGuard implements production-grade security controls following OWASP Web Security Guidelines and NIST SP 800-53 standards:
+Guardly implements production-grade security controls following OWASP Web Security Guidelines and NIST SP 800-53 standards:
 
 ### 1. Environment & Secret Management
 - **Centralized Secure Config**: Environment variables loaded via `dotenv` with standardized key names (`SECRET_KEY`, `AUTO_CREATE_SCHEMA`, `DATABASE_URL`).
@@ -44,6 +44,7 @@ PhishGuard implements production-grade security controls following OWASP Web Sec
 ## 🚀 Quick Start & Deployment
 
 ### 1. Environment Setup
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -51,16 +52,21 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configuration
+
 Copy the configuration template:
+
 ```bash
 cp .env.example .env
 ```
+
 Generate a strong secret key for `.env`:
+
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
 ### 3. Launching the Application
+
 ```bash
 python app.py
 ```
@@ -70,6 +76,7 @@ python app.py
 ## 🧪 Running Automated Tests
 
 Run the complete automated unit and security test suite:
+
 ```bash
 python -m unittest discover tests
 ```
@@ -91,4 +98,4 @@ python scripts/package_release.py
 bash scripts/package_release.sh
 ```
 
-The output package will be created at `dist/Phishing-Email-Detector.zip` and verified against forbidden file inclusion rules before completion.
+The output package will be created at `dist/Guardly.zip` and verified against forbidden file inclusion rules before completion.
