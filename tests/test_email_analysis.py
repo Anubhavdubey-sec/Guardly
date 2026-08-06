@@ -5,7 +5,12 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scanner.phishing_detector import analyze_email
+from scanner.phishing_detector import (
+    KEYWORD_CATEGORIES,
+    SUSPICIOUS_KEYWORDS,
+    analyze_email,
+    normalize_for_matching,
+)
 from scanner.email_parser import parse_email
 
 
@@ -49,6 +54,91 @@ class EmailAnalysisTests(unittest.TestCase):
         result = analyze_email(email_data)
         self.assertEqual(result["verdict"], "High Risk")
         self.assertGreaterEqual(result["score"], 50)
+        self.assertIn("Urgency / pressure tactics", result["categories"])
+        self.assertIn("Credential harvesting / account security", result["categories"])
+
+    def test_extra_spaces_evasion_caught(self):
+        email_data = {
+            "from": "security@service.com",
+            "from_address": "security@service.com",
+            "to": "target@example.com",
+            "subject": "Account Alert",
+            "body": "Please v e r i f y  your account immediately.",
+            "urls": [],
+            "attachments": [],
+            "headers": {},
+        }
+        result = analyze_email(email_data)
+        self.assertIn("Credential harvesting / account security", result["categories"])
+        self.assertGreaterEqual(result["score"], 20)
+
+    def test_leetspeak_evasion_caught(self):
+        email_data = {
+            "from": "alert@service.com",
+            "from_address": "alert@service.com",
+            "to": "target@example.com",
+            "subject": "Secur1ty Notice",
+            "body": "Please ver1fy y0ur acc0unt to continue.",
+            "urls": [],
+            "attachments": [],
+            "headers": {},
+        }
+        result = analyze_email(email_data)
+        self.assertIn("Credential harvesting / account security", result["categories"])
+        self.assertGreaterEqual(result["score"], 20)
+
+    def test_body_only_keyword_match(self):
+        email_data = {
+            "from": "support@service.com",
+            "from_address": "support@service.com",
+            "to": "user@example.com",
+            "subject": "Regular Notification",
+            "body": "Please click here to verify your account immediately.",
+            "urls": [],
+            "attachments": [],
+            "headers": {},
+        }
+        result = analyze_email(email_data)
+        self.assertIn("Credential harvesting / account security", result["categories"])
+        self.assertGreaterEqual(result["score"], 20)
+        finding_texts = " ".join(result["findings"])
+        self.assertIn("verify your account", finding_texts)
+
+    def test_multiple_keyword_categories_matching(self):
+        email_data = {
+            "from": "alert@bank.com",
+            "from_address": "alert@bank.com",
+            "to": "user@example.com",
+            "subject": "Urgent final notice",  # Urgency (12)
+            "body": "Payment failed for your account. Update your password now.",  # Financial (18) + Credential (20) -> sum 50, capped at 40
+            "urls": [],
+            "attachments": [],
+            "headers": {},
+        }
+        result = analyze_email(email_data)
+        self.assertIn("Urgency / pressure tactics", result["categories"])
+        self.assertIn("Financial / billing lures", result["categories"])
+        self.assertIn("Credential harvesting / account security", result["categories"])
+        self.assertEqual(result["score"], 40)
+
+    def test_keyword_score_40_cap_respected(self):
+        email_data = {
+            "from": "scammer@scam.com",
+            "from_address": "scammer@scam.com",
+            "to": "victim@example.com",
+            "subject": "Urgent: Final notice! You have won a free gift card",
+            "body": (
+                "Verify your account now. Payment failed. Virus detected on your computer. "
+                "Delivery failed package on hold. I have access to your webcam recording. "
+                "Direct deposit change requested. IRS notice unpaid taxes. Your insurance claim update."
+            ),
+            "urls": [],
+            "attachments": [],
+            "headers": {},
+        }
+        result = analyze_email(email_data)
+        self.assertEqual(result["score"], 40)
+        self.assertGreaterEqual(len(result["categories"]), 5)
 
     def test_email_parser_with_raw_eml(self):
         eml_content = (
