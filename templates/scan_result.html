@@ -392,6 +392,32 @@
                 <div class="auth-check-list"><div><span>SPF</span><b class="auth-{{ 'pass' if analysis.auth_results.spf == 'pass' else 'neutral' if analysis.auth_results.spf == 'not available' else 'fail' }}">{{ analysis.auth_results.spf }}</b></div><div><span>DKIM</span><b class="auth-{{ 'pass' if analysis.auth_results.dkim == 'pass' else 'neutral' if analysis.auth_results.dkim == 'not available' else 'fail' }}">{{ analysis.auth_results.dkim }}</b></div><div><span>DMARC</span><b class="auth-{{ 'pass' if analysis.auth_results.dmarc == 'pass' else 'neutral' if analysis.auth_results.dmarc == 'not available' else 'fail' }}">{{ analysis.auth_results.dmarc }}</b></div></div>
             </section>
             <section class="context-card"><div class="section-overline">Identity alignment</div><dl class="context-list"><div><dt>From domain</dt><dd class="font-mono">{{ sender_domain or '—' }}</dd></div><div><dt>Reply-to domain</dt><dd class="font-mono">{{ reply_domain or '—' }}</dd></div><div><dt>Recipient</dt><dd class="font-mono">{{ email_data.to or '—' }}</dd></div><div><dt>Mail Client</dt><dd class="font-mono">{{ analysis.header_analysis.mail_client.client_name if analysis.header_analysis else 'Unknown' }}</dd></div></dl></section>
+
+            <!-- NLP AI Social Engineering & Psychological Manipulation Card -->
+            {% if analysis.nlp_analysis %}
+            <section class="context-card border-primary border-opacity-50">
+                <div class="section-overline text-info"><i class="bi bi-robot me-1"></i> AI NLP Intelligence</div>
+                <h2 class="fs-6 fw-bold text-white mb-2">Social Engineering Score</h2>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="fs-4 fw-bold font-mono {{ 'text-danger' if analysis.nlp_analysis.social_engineering_score >= 60 else 'text-warning' if analysis.nlp_analysis.social_engineering_score >= 30 else 'text-success' }}">
+                        {{ analysis.nlp_analysis.social_engineering_score }} / 100
+                    </span>
+                    <span class="badge {{ 'bg-danger' if analysis.nlp_analysis.threat_level == 'Critical' else 'bg-warning text-dark' if analysis.nlp_analysis.threat_level == 'High' else 'bg-info text-dark' if analysis.nlp_analysis.threat_level == 'Medium' else 'bg-success' }} font-mono">
+                        {{ analysis.nlp_analysis.threat_level }} Risk
+                    </span>
+                </div>
+                {% if analysis.nlp_analysis.tactics %}
+                <div class="mb-2">
+                    <span class="text-muted d-block small font-mono mb-1">DETECTED NLP VECTORS:</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for t in analysis.nlp_analysis.tactics %}
+                            <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50 small font-mono">{{ t }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
         </aside>
     </div>
 </section>

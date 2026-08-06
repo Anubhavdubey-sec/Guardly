@@ -1,6 +1,7 @@
 import re
 
 from scanner.header_analyzer import analyze_email_headers
+from scanner.nlp_analyzer import analyze_social_engineering_nlp
 from scanner.url_heuristics import assess_url
 from services.playbook_engine import execute_soc_playbooks
 from services.yara_generator import generate_sigma_rule, generate_yara_rule
@@ -311,6 +312,9 @@ def analyze_email(email_data):
     else:
         verdict = "Low Risk"
 
+    # NLP & AI Social Engineering Lure Detector
+    nlp_analysis = analyze_social_engineering_nlp(email_data)
+
     res_dict = {
         "score": score,
         "verdict": verdict,
@@ -319,6 +323,7 @@ def analyze_email(email_data):
         "url_assessments": url_assessments,
         "auth_results": {"spf": spf, "dkim": dkim, "dmarc": dmarc},
         "header_analysis": header_dfir,
+        "nlp_analysis": nlp_analysis,
     }
 
     # Generate Automated YARA, SIEM Sigma Rules, and SOC Incident Response Playbooks
