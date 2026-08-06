@@ -223,21 +223,39 @@ def analyze_email(email_data):
     score += min(40, raw_keyword_score)
 
     # Attachments analysis
+    pdf_urls_set = set(email_data.get("pdf_urls", []))
     for att in email_data.get("attachments", []):
-        filename = att.get("filename", "").lower()
-        if any(filename.endswith(ext) for ext in EXECUTABLE_EXTENSIONS):
+        filename = att.get("filename", "")
+        filename_lower = filename.lower()
+        if any(filename_lower.endswith(ext) for ext in EXECUTABLE_EXTENSIONS):
             score += 35
-            findings.append(f"Executable attachment detected: {att.get('filename')}.")
+            findings.append(f"Executable attachment detected: {filename}.")
             categories.append("Executable attachments")
+
+        pdf_scan = att.get("pdf_scan")
+        if pdf_scan:
+            if pdf_scan.get("error"):
+                findings.append(f"PDF attachment '{filename}' could not be fully scanned: {pdf_scan['error']}.")
+            if pdf_scan.get("urls"):
+                pdf_urls_set.update(pdf_scan["urls"])
+                score += 20
+                url_count = len(pdf_scan["urls"])
+                findings.append(f"PDF attachment '{filename}' contains {url_count} embedded link(s) not visible in the message body.")
+                categories.append("Link hidden in attachment")
 
     # URLs analysis
     for url in email_data.get("urls", []):
+        is_from_pdf = url in pdf_urls_set
         reasons = assess_url(url)
+        if is_from_pdf:
+            reasons.append("URL is embedded inside a PDF attachment rather than the message body.")
+
         if reasons:
             score += 25
             status = "Suspicious"
+            source_label = "PDF attachment" if is_from_pdf else "message body"
             for r in reasons:
-                findings.append(f"Suspicious URL detected ({url}): {r}")
+                findings.append(f"Suspicious URL detected ({source_label}: {url}): {r}")
             categories.append("Suspicious URL")
         else:
             status = "Clean"

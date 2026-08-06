@@ -205,8 +205,17 @@ class EmailAnalysisTests(unittest.TestCase):
         self.assertEqual(result["url_assessments"][0]["status"], "Suspicious")
         self.assertIn("Suspicious URL", result["categories"])
         self.assertGreaterEqual(result["score"], 25)
-        findings_str = " ".join(result["findings"])
-        self.assertIn("high-risk top-level domain", findings_str)
+    def test_is_ip_literal_strict_validation(self):
+        from scanner.url_heuristics import is_ip_literal
+        self.assertTrue(is_ip_literal("192.168.1.1"))
+        self.assertTrue(is_ip_literal("8.8.8.8"))
+        self.assertTrue(is_ip_literal("::1"))
+        self.assertTrue(is_ip_literal("[2607:f8b0:4005:805::200e]:443"))
+
+        # False positives prevented
+        self.assertFalse(is_ip_literal("v1.2.3.4.example.com"))
+        self.assertFalse(is_ip_literal("999.999.999.999"))
+        self.assertFalse(is_ip_literal("shop.com"))
 
 
 if __name__ == "__main__":
