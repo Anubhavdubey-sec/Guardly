@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Guardly - Interactive SOC Threat Graph &amp; Campaign Canvas{% endblock %}
+
+{% block content %}
+<div class="virustotal-landing-container py-3">
+
+    <!-- Header Section Card -->
+    <div class="soc-card p-4 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <p class="eyebrow text-primary mb-1"><i class="bi bi-diagram-3-fill me-1"></i> SOC CAMPAIGN VISUALIZATION</p>
+                <h1 class="h2 fw-bold text-white mb-1 font-mono">Interactive Threat Graph Canvas</h1>
+                <p class="text-muted small mb-0">Visual relationship mapping connecting emails, senders, malicious URLs, target recipients, and threat verdicts.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('scanner.dashboard') }}" class="btn btn-outline-light btn-sm font-mono">
+                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Graph Workspace Layout -->
+    <div class="row g-4 mb-4">
+        <!-- Interactive Graph Canvas Container -->
+        <div class="col-lg-8">
+            <div class="soc-card p-4 position-relative" style="min-height: 550px; height: 550px;">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary border-opacity-25 pb-2">
+                    <h3 class="text-white fs-5 fw-bold mb-0 font-mono">
+                        <i class="bi bi-hub me-2 text-primary"></i>Campaign Relationship Map
+                    </h3>
+                    <div class="badge bg-primary font-mono" id="graphStatsBadge">Loading nodes...</div>
+                </div>
+
+                <!-- Vis.js Canvas Element -->
+                <div id="threatNetworkCanvas" style="width: 100%; height: 440px; background: rgba(10, 15, 25, 0.6); border-radius: 8px;" class="border border-secondary border-opacity-25"></div>
+
+                <!-- Floating Canvas Controls -->
+                <div class="position-absolute bottom-0 start-0 m-4 p-2 bg-dark bg-opacity-75 backdrop-blur rounded border border-secondary border-opacity-25 d-flex gap-2" style="z-index: 1000;">
+                    <button class="btn btn-sm btn-outline-light font-mono" onclick="resetGraphZoom()"><i class="bi bi-aspect-ratio me-1"></i> Fit Graph</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Node Details & Analytics Sidebar -->
+        <div class="col-lg-4">
+            <div class="soc-card p-4 h-100">
+                <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+                    <i class="bi bi-info-circle me-2 text-info"></i>Indicator Inspector
+                </h3>
+
+                <div id="nodeDetailContainer">
+                    <div class="text-center py-5 text-muted font-mono">
+                        <i class="bi bi-hand-index-thumb fs-1 d-block mb-3 text-primary opacity-50"></i>
+                        Click any node on the graph canvas to inspect correlated threat telemetry and campaign links.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Vis.js Network Library -->
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+let network = null;
+let graphData = null;
+
+document.addEventListener("DOMContentLoaded", function() {
+    loadThreatGraph();
+});
+
+function loadThreatGraph() {
+    const scanIdParam = "{{ target_scan_id or '' }}";
+    let apiUrl = "/api/v1/threat-graph/data";
+    if (scanIdParam) {
+        apiUrl += "?scan_id=" + scanIdParam;
+    }
+
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            graphData = data;
+            renderGraph(data);
+            document.getElementById("graphStatsBadge").innerText = `${data.summary.total_nodes} Nodes | ${data.summary.total_edges} Edges`;
+        })
+        .catch(err => {
+            console.error("Error loading graph data:", err);
+            document.getElementById("graphStatsBadge").innerText = "Error loading graph";
+        });
+}
+
+function renderGraph(data) {
+    const container = document.getElementById("threatNetworkCanvas");
+
+    const visNodes = data.nodes.map(n => {
+        let color = "#3b82f6"; // default blue
+        let shape = "dot";
+
+        if (n.group === "email") {
+            shape = "diamond";
+            color = n.risk === "High Risk" ? "#ef4444" : n.risk === "Medium Risk" ? "#f59e0b" : "#10b981";
+        } else if (n.group === "domain") {
+            shape = "dot";
+            color = "#a855f7";
+        } else if (n.group === "url") {
+            shape = "triangle";
+            color = "#f43f5e";
+        } else if (n.group === "recipient") {
+            shape = "star";
+            color = "#06b6d4";
+        }
+
+        return {
+            id: n.id,
+            label: n.label,
+            color: { background: color, border: "#ffffff", highlight: { background: "#60a5fa", border: "#ffffff" } },
+            shape: shape,
+            size: n.group === "email" ? 22 : 16,
+            font: { color: "#ffffff", face: "JetBrains Mono", size: 12 },
+            rawData: n
+        };
+    });
+
+    const visEdges = data.edges.map(e => ({
+        from: e.from,
+        to: e.to,
+        label: e.label,
+        color: { color: "rgba(255, 255, 255, 0.25)", highlight: "#60a5fa" },
+        font: { color: "#94a3b8", size: 10, face: "JetBrains Mono" },
+        arrows: "to"
+    }));
+
+    const graphPayload = {
+        nodes: new vis.DataSet(visNodes),
+        edges: new vis.DataSet(visEdges)
+    };
+
+    const options = {
+        physics: {
+            stabilization: true,
+            barnesHut: { gravitationalConstant: -3000, springLength: 95 }
+        },
+        interaction: { hover: true, tooltipDelay: 100 }
+    };
+
+    network = new vis.Network(container, graphPayload, options);
+
+    network.on("selectNode", function(params) {
+        const nodeId = params.nodes[0];
+        const selectedNode = visNodes.find(n => n.id === nodeId);
+        if (selectedNode) {
+            displayNodeDetails(selectedNode.rawData);
+        }
+    });
+}
+
+function displayNodeDetails(node) {
+    const detailBox = document.getElementById("nodeDetailContainer");
+    const info = node.info || {};
+
+    let html = `
+        <div class="font-mono">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-25 pb-2">
+                <span class="badge bg-primary text-uppercase">${node.group}</span>
+                <span class="badge ${node.risk === 'High Risk' ? 'bg-danger' : node.risk === 'Medium Risk' ? 'bg-warning text-dark' : 'bg-success'}">${node.risk}</span>
+            </div>
+            <h5 class="text-white fw-bold mb-3 text-break">${node.label}</h5>
+            <dl class="row g-2 small text-muted">
+    `;
+
+    for (const [key, value] of Object.entries(info)) {
+        html += `
+            <dt class="col-sm-4 text-uppercase text-secondary">${key}:</dt>
+            <dd class="col-sm-8 text-white text-break">${value}</dd>
+        `;
+    }
+
+    html += `</dl>`;
+
+    if (info.scan_id) {
+        html += `
+            <div class="mt-4 pt-2 border-top border-secondary border-opacity-25">
+                <a href="/scan/${info.scan_id}" class="btn btn-primary btn-sm font-mono w-100">
+                    <i class="bi bi-file-earmark-text me-1"></i> Open DFIR Report #${info.scan_id}
+                </a>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    detailBox.innerHTML = html;
+}
+
+function resetGraphZoom() {
+    if (network) {
+        network.fit();
+    }
+}
+</script>
+{% endblock %}

@@ -100,6 +100,8 @@ def create_app(test_config=None):
     app.register_blueprint(auth_bp)
     app.register_blueprint(scanner_bp)
     app.register_blueprint(admin_bp)
+    from routes.graph import graph_bp
+    app.register_blueprint(graph_bp)
 
     if app.config["AUTO_CREATE_SCHEMA"]:
         with app.app_context():
