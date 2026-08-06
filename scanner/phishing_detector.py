@@ -1,5 +1,7 @@
 import re
 
+from scanner.url_heuristics import assess_url
+
 EXECUTABLE_EXTENSIONS = {".exe", ".bat", ".cmd", ".scr", ".vbs", ".js", ".jar", ".ps1", ".msi"}
 
 LEETSPEAK_MAP = str.maketrans({
@@ -230,14 +232,16 @@ def analyze_email(email_data):
 
     # URLs analysis
     for url in email_data.get("urls", []):
-        reasons = []
-        status = "Clean"
-        if re.search(r"http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", url):
+        reasons = assess_url(url)
+        if reasons:
             score += 25
             status = "Suspicious"
-            reasons.append("URL uses an IP address instead of a domain name.")
-            findings.append(f"Suspicious IP-based URL: {url}")
+            for r in reasons:
+                findings.append(f"Suspicious URL detected ({url}): {r}")
             categories.append("Suspicious URL")
+        else:
+            status = "Clean"
+
         url_assessments.append({
             "url": url,
             "status": status,

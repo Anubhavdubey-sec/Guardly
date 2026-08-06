@@ -27,7 +27,16 @@ from models.user import User, db
 from routes.auth import login_required, roles_required
 from scanner.email_parser import parse_email
 from scanner.phishing_detector import analyze_email
+from scanner.url_heuristics import (
+    HIGH_RISK_TLDS,
+    KNOWN_IMPERSONATED_BRANDS,
+    assess_url,
+    calculate_domain_entropy,
+    check_brand_impersonation,
+    is_ip_literal,
+)
 from services.audit import record_event
+from services.limiter import limiter
 from services.report_generator import build_scan_report
 from services.public_lookup import PublicLookupClient, enrich_analysis_with_public_context, get_ip_location
 from services.ssrf import is_ip_private_or_internal, safe_http_get, validate_url_ssrf
@@ -377,18 +386,12 @@ import urllib.parse
 import urllib.request
 import ssl
 
-KNOWN_IMPERSONATED_BRANDS = ["paypal", "microsoft", "google", "apple", "amazon", "netflix", "bankofamerica", "chase", "wellsfargo", "facebook"]
-HIGH_RISK_TLDS = [".zip", ".top", ".xyz", ".cc", ".tk", ".club", ".work", ".click", ".buzz"]
-
-def _calculate_domain_entropy(domain_str):
-    import math
-    if not domain_str:
-        return 0.0
-    prob = [float(domain_str.count(c)) / len(domain_str) for c in set(domain_str)]
-    return round(-sum([p * math.log(p) / math.log(2) for p in prob]), 2)
+_calculate_domain_entropy = calculate_domain_entropy
 
 
 @scanner_bp.route("/scan/url", methods=["GET", "POST"])
+@login_required
+@limiter.limit("10 per minute")
 def scan_url():
     target_url = request.values.get("url", "").strip()
     if not target_url:
@@ -413,10 +416,12 @@ def scan_url():
     response_ms = 0
     redirect_destination = None
 
+    target_ip = None
     try:
         start_time = time.time()
-        status_code, body, final_url, server_banner, content_type = safe_http_get(target_url, timeout=2.5)
+        status_code, body, final_url, server_banner, content_type, pinned_ip = safe_http_get(target_url, timeout=2.5)
         response_ms = round((time.time() - start_time) * 1000)
+        target_ip = pinned_ip
         if status_code > 0:
             http_status = f"{status_code} Response"
         else:
@@ -429,18 +434,15 @@ def scan_url():
     except Exception as err:
         http_status = "Offline / Connection Refused"
 
-    # Brand Impersonation & Typosquatting Analysis
-    detected_brand_impersonation = None
+    # Brand Impersonation & Typosquatting Analysis (Domain-scoped via url_heuristics)
     target_lower = target_url.lower()
-    for brand in KNOWN_IMPERSONATED_BRANDS:
-        if brand in target_lower and not domain.endswith(f"{brand}.com"):
-            detected_brand_impersonation = brand.capitalize()
-            break
+    domain_host = domain.lower().split(":")[0]
+    detected_brand_impersonation = check_brand_impersonation(domain_host)
 
     # Security Heuristics Assessment
-    is_ip = bool(re.search(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", domain))
-    domain_entropy = _calculate_domain_entropy(domain.split(":")[0])
-    has_high_risk_tld = any(domain.endswith(tld) for tld in HIGH_RISK_TLDS)
+    is_ip = is_ip_literal(domain)
+    domain_entropy = calculate_domain_entropy(domain_host)
+    has_high_risk_tld = any(domain_host.endswith(tld) for tld in HIGH_RISK_TLDS)
     is_suspicious = is_ip or bool(detected_brand_impersonation) or has_high_risk_tld or any(kw in target_lower for kw in ("login", "verify", "secure", "bank", "account", "paypal", "phish"))
 
     local_heuristic_rules = [
@@ -450,22 +452,15 @@ def scan_url():
         {"name": "Domain Entropy Evaluator", "result": "Suspicious" if domain_entropy > 4.2 else "Passed", "icon": "bi-shield-x text-warning" if domain_entropy > 4.2 else "bi-shield-check text-success"},
         {"name": "HTTP Live Reachability", "result": "Passed" if "200" in http_status or "30" in http_status else "Notice", "icon": "bi-shield-check text-success" if "200" in http_status or "30" in http_status else "bi-info-circle text-info"},
         {"name": "SSL / TLS Scheme Check", "result": "Passed" if parsed.scheme == "https" else "Notice", "icon": "bi-shield-check text-success" if parsed.scheme == "https" else "bi-info-circle text-warning"},
-        {"name": "Cryptographic Hash Generator", "result": "Passed", "icon": "bi-shield-check text-success"},
-        {"name": "Local Network Geolocation", "result": "Passed", "icon": "bi-shield-check text-success"},
     ]
 
     suspicious_rules_count = sum(1 for v in local_heuristic_rules if v["result"] == "Suspicious")
     verdict = "High Risk" if suspicious_rules_count >= 2 else ("Medium Risk" if suspicious_rules_count == 1 else "Low Risk")
     risk_score = 85 if verdict == "High Risk" else (45 if verdict == "Medium Risk" else 5)
 
-    # IP Geolocation extraction for URL host
-    host_clean = domain.split(":")[0]
-    target_ip = host_clean if is_ip else None
+    # IP Geolocation extraction for URL host using pinned_ip (no secondary unpinned DNS lookup)
     if not target_ip:
-        try:
-            target_ip = socket.gethostbyname(host_clean)
-        except Exception:
-            target_ip = None
+        _, _, target_ip = validate_url_ssrf(target_url)
 
     ip_location = get_ip_location(target_ip) if target_ip else None
 

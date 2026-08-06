@@ -181,6 +181,33 @@ class EmailAnalysisTests(unittest.TestCase):
         self.assertEqual(len(result["url_assessments"]), 1)
         self.assertEqual(result["url_assessments"][0]["url"], "https://example.com/test")
 
+    def test_assess_url_heuristics(self):
+        from scanner.url_heuristics import assess_url
+        clean_reasons = assess_url("https://www.google.com")
+        self.assertEqual(clean_reasons, [])
+
+        suspicious_reasons = assess_url("http://paypal-security-update.com/verify")
+        self.assertTrue(any("impersonate Paypal" in r for r in suspicious_reasons))
+        self.assertTrue(any("suspicious keywords" in r for r in suspicious_reasons))
+
+    def test_domain_based_suspicious_url_flagged_in_email(self):
+        email_data = {
+            "from": "newsletter@domain.com",
+            "from_address": "newsletter@domain.com",
+            "to": "user@example.com",
+            "subject": "Monthly Newsletter",
+            "body": "Click here to unsubscribe: https://example.xyz/track/user123",
+            "urls": ["https://example.xyz/track/user123"],
+            "attachments": [],
+            "headers": {},
+        }
+        result = analyze_email(email_data)
+        self.assertEqual(result["url_assessments"][0]["status"], "Suspicious")
+        self.assertIn("Suspicious URL", result["categories"])
+        self.assertGreaterEqual(result["score"], 25)
+        findings_str = " ".join(result["findings"])
+        self.assertIn("high-risk top-level domain", findings_str)
+
 
 if __name__ == "__main__":
     unittest.main()

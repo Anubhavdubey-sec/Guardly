@@ -138,6 +138,12 @@ class ScannerRouteTests(unittest.TestCase):
         self.assertIn(b"restricted to administrators and analysts", response.data)
 
     def test_scan_url_dedicated_page(self):
+        # Unauthenticated request redirects to upload
+        unauth_resp = self.client.get("/scan/url?url=http://login-verify-account.example.com")
+        self.assertEqual(unauth_resp.status_code, 302)
+
+        # Authenticated request renders analysis page
+        self._login_as_admin()
         response = self.client.get("/scan/url?url=http://login-verify-account.example.com")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"URL ANALYSIS", response.data)
@@ -150,6 +156,27 @@ class ScannerRouteTests(unittest.TestCase):
         self.assertIn(b"IOC SEARCH", response.data)
         self.assertIn(b"192.168.1.1", response.data)
         self.assertIn(b"IPv4 Address", response.data)
+
+    def test_brand_impersonation_false_positives(self):
+        self._login_as_admin()
+
+        # Legitimate domain with brand name in URL path should NOT flag brand impersonation
+        res_path = self.client.get("/scan/url?url=https://shop.com/apple-watch-deal&format=json")
+        self.assertEqual(res_path.status_code, 200)
+        data_path = res_path.get_json()
+        self.assertIsNone(data_path.get("brand_impersonation"))
+
+        # Lookalike domain SHOULD flag brand impersonation
+        res_lookalike = self.client.get("/scan/url?url=http://paypal-secure.com&format=json")
+        self.assertEqual(res_lookalike.status_code, 200)
+        data_lookalike = res_lookalike.get_json()
+        self.assertEqual(data_lookalike.get("brand_impersonation"), "Paypal")
+
+        # Exact legitimate domain should NOT flag brand impersonation
+        res_legit = self.client.get("/scan/url?url=https://paypal.com&format=json")
+        self.assertEqual(res_legit.status_code, 200)
+        data_legit = res_legit.get_json()
+        self.assertIsNone(data_legit.get("brand_impersonation"))
 
 
 if __name__ == "__main__":

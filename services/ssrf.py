@@ -169,7 +169,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                     ssl_sock = ssl_ctx.wrap_socket(sock, server_hostname=hostname)
                 except (ssl.SSLCertVerificationError, ssl.SSLError, ssl.CertificateError) as cert_err:
                     sock.close()
-                    return 0, "", current_url, f"TLS Verification Failed ({cert_err})", "Unknown"
+                    return 0, "", current_url, f"TLS Verification Failed ({cert_err})", "Unknown", pinned_ip
 
                 conn = http.client.HTTPSConnection(hostname, port=port, timeout=timeout)
                 conn.sock = ssl_sock
@@ -190,7 +190,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                 location = resp_headers.get("location") or resp_headers.get("Location")
                 conn.close()
                 if not location:
-                    return status, "", current_url, server_banner, content_type
+                    return status, "", current_url, server_banner, content_type, pinned_ip
 
                 redirect_url = urllib.parse.urljoin(current_url, location)
                 # Re-validate redirect target URL and IP before following hop!
@@ -204,7 +204,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
 
             body = response.read(1024 * 512).decode("utf-8", errors="replace")
             conn.close()
-            return status, body, current_url, server_banner, content_type
+            return status, body, current_url, server_banner, content_type, pinned_ip
 
         except (socket.timeout, TimeoutError):
             if conn:
