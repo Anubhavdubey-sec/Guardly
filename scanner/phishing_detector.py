@@ -168,7 +168,7 @@ KEYWORD_CATEGORIES = {
         ],
     },
     "Generic phishing infrastructure phrases": {
-        "weight": 10,
+        "weight": 0,
         "keywords": [
             "click here", "this link will expire", "action required",
             "we noticed something unusual", "verify to continue",

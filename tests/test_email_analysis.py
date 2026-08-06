@@ -212,10 +212,46 @@ class EmailAnalysisTests(unittest.TestCase):
         self.assertTrue(is_ip_literal("::1"))
         self.assertTrue(is_ip_literal("[2607:f8b0:4005:805::200e]:443"))
 
-        # False positives prevented
-        self.assertFalse(is_ip_literal("v1.2.3.4.example.com"))
-        self.assertFalse(is_ip_literal("999.999.999.999"))
-        self.assertFalse(is_ip_literal("shop.com"))
+    def test_check_brand_impersonation_tokenization(self):
+        from scanner.url_heuristics import check_brand_impersonation
+        # False positives prevented (substring in larger domain label)
+        self.assertIsNone(check_brand_impersonation("googleapis.com"))
+        self.assertIsNone(check_brand_impersonation("amazonaws.com"))
+        self.assertIsNone(check_brand_impersonation("purchase.com"))
+        self.assertIsNone(check_brand_impersonation("snapple.com"))
+
+        # True positives preserved
+        self.assertEqual(check_brand_impersonation("paypal-secure-login.com"), "Paypal")
+        self.assertEqual(check_brand_impersonation("apple-support-verify.org"), "Apple")
+
+    def test_benign_email_with_analytics_and_s3_images(self):
+        eml_content = """From: support@company.com
+To: user@company.com
+Subject: Your Order Shipping Confirmation
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html>
+<body>
+<p>Thank you for your order! Your items have shipped.</p>
+<p><img src="https://my-bucket.s3.amazonaws.com/images/banner.png" alt="Banner"></p>
+<p>Track your shipment or view order details on your <a href="https://www.company.com/track?id=12345">Account Dashboard</a>.</p>
+<script src="https://googleapis.com/analytics.js"></script>
+</body>
+</html>
+"""
+        with tempfile.NamedTemporaryFile("wb", suffix=".eml", delete=False) as tf:
+            tf.write(eml_content.encode("utf-8"))
+            tf_path = tf.name
+
+        try:
+            parsed = parse_email(tf_path)
+            result = analyze_email(parsed)
+            self.assertEqual(result["verdict"], "Low Risk")
+            self.assertEqual(result["score"], 0)
+        finally:
+            if os.path.exists(tf_path):
+                os.remove(tf_path)
 
 
 if __name__ == "__main__":

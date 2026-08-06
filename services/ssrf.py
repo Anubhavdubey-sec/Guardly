@@ -129,16 +129,17 @@ def validate_url_ssrf(url_str, retries=1):
     return True, "Valid public domain target.", primary_ip
 
 
-def safe_http_get(url_str, timeout=2.5, max_redirects=3):
+def safe_http_get(url_str, timeout=2.5, max_redirects=10):
     """
     Perform a safe HTTP/HTTPS GET request with absolute IP-pinning,
     defeating DNS-rebinding attacks, enforcing TLS certificate verification,
-    and validating per-hop redirects.
+    and recording per-hop redirect telemetry.
 
-    Returns (status_code: int, response_body: str, final_url: str, server_banner: str, content_type: str).
+    Returns (status_code: int, response_body: str, final_url: str, server_banner: str, content_type: str, pinned_ip: str, redirect_hops: list).
     """
     current_url = url_str
     redirect_count = 0
+    redirect_hops = []
 
     while redirect_count <= max_redirects:
         is_valid, reason, pinned_ip = validate_url_ssrf(current_url)
@@ -169,7 +170,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                     ssl_sock = ssl_ctx.wrap_socket(sock, server_hostname=hostname)
                 except (ssl.SSLCertVerificationError, ssl.SSLError, ssl.CertificateError) as cert_err:
                     sock.close()
-                    return 0, "", current_url, f"TLS Verification Failed ({cert_err})", "Unknown", pinned_ip
+                    return 0, "", current_url, f"TLS Verification Failed ({cert_err})", "Unknown", pinned_ip, redirect_hops
 
                 conn = http.client.HTTPSConnection(hostname, port=port, timeout=timeout)
                 conn.sock = ssl_sock
@@ -190,7 +191,7 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                 location = resp_headers.get("location") or resp_headers.get("Location")
                 conn.close()
                 if not location:
-                    return status, "", current_url, server_banner, content_type, pinned_ip
+                    return status, "", current_url, server_banner, content_type, pinned_ip, redirect_hops
 
                 redirect_url = urllib.parse.urljoin(current_url, location)
                 # Re-validate redirect target URL and IP before following hop!
@@ -198,13 +199,21 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                 if not is_red_valid or not red_ip:
                     raise ValueError(f"Blocked SSRF Redirect Target ({red_reason})")
 
+                redirect_hops.append({
+                    "hop_number": redirect_count + 1,
+                    "status_code": status,
+                    "source_url": current_url,
+                    "destination_url": redirect_url,
+                    "pinned_ip": red_ip,
+                })
+
                 current_url = redirect_url
                 redirect_count += 1
                 continue
 
             body = response.read(1024 * 512).decode("utf-8", errors="replace")
             conn.close()
-            return status, body, current_url, server_banner, content_type, pinned_ip
+            return status, body, current_url, server_banner, content_type, pinned_ip, redirect_hops
 
         except (socket.timeout, TimeoutError):
             if conn:
@@ -217,5 +226,5 @@ def safe_http_get(url_str, timeout=2.5, max_redirects=3):
                 raise err
             raise ValueError(f"Connection Failed ({err})")
 
-    raise ValueError("Exceeded Maximum Allowed Redirects")
+    raise ValueError("Exceeded Maximum Allowed Redirects (10 Hops Limit)")
 

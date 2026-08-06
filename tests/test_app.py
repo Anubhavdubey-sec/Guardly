@@ -138,12 +138,7 @@ class ScannerRouteTests(unittest.TestCase):
         self.assertIn(b"restricted to administrators and analysts", response.data)
 
     def test_scan_url_dedicated_page(self):
-        # Unauthenticated request redirects to upload
-        unauth_resp = self.client.get("/scan/url?url=http://login-verify-account.example.com")
-        self.assertEqual(unauth_resp.status_code, 302)
-
-        # Authenticated request renders analysis page
-        self._login_as_admin()
+        # Public unauthenticated URL scan returns 200 OK
         response = self.client.get("/scan/url?url=http://login-verify-account.example.com")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"URL ANALYSIS", response.data)
@@ -177,6 +172,53 @@ class ScannerRouteTests(unittest.TestCase):
         self.assertEqual(res_legit.status_code, 200)
         data_legit = res_legit.get_json()
         self.assertIsNone(data_legit.get("brand_impersonation"))
+
+    def test_enterprise_redirect_chain_analysis(self):
+        from scanner.url_heuristics import analyze_redirect_chain, is_shortener
+
+        self.assertTrue(is_shortener("bit.ly"))
+        self.assertTrue(is_shortener("tinyurl.com"))
+        self.assertFalse(is_shortener("google.com"))
+
+        raw_hops = [
+            {
+                "hop_number": 1,
+                "status_code": 301,
+                "source_url": "http://bit.ly/login-test",
+                "destination_url": "https://paypal-secure.com/verify",
+                "pinned_ip": "104.16.1.1",
+            },
+            {
+                "hop_number": 2,
+                "status_code": 302,
+                "source_url": "https://paypal-secure.com/verify",
+                "destination_url": "http://192.168.1.1/login",
+                "pinned_ip": "192.168.1.1",
+            },
+        ]
+
+        analysis = analyze_redirect_chain("http://bit.ly/login-test", "http://192.168.1.1/login", raw_hops)
+        self.assertTrue(analysis["has_redirects"])
+        self.assertEqual(analysis["total_hops"], 2)
+        self.assertTrue(analysis["has_cross_domain"])
+        self.assertTrue(analysis["has_https_downgrade"])
+        self.assertTrue(analysis["has_shortened_url"])
+        self.assertTrue(analysis["has_ip_destination"])
+        self.assertGreaterEqual(analysis["risk_score"], 70)
+
+    def test_geolocation_health_gated(self):
+        # Unauthenticated request redirects to login (302)
+        res_unauth = self.client.get("/api/v1/geolocation/health")
+        self.assertEqual(res_unauth.status_code, 302)
+
+        res_unauth_admin = self.client.get("/admin/geolocation/health")
+        self.assertEqual(res_unauth_admin.status_code, 302)
+
+        # Authenticated admin request returns 200 OK
+        self._login_as_admin()
+        res_admin = self.client.get("/admin/geolocation/health")
+        self.assertEqual(res_admin.status_code, 200)
+        self.assertIn("status", res_admin.get_json())
 
 
 if __name__ == "__main__":

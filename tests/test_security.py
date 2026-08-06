@@ -187,7 +187,7 @@ class SecurityHardeningTests(unittest.TestCase):
                     mock_resp.read.return_value = b"OK"
                     mock_conn_inst.getresponse.return_value = mock_resp
 
-                    status, body, final_url, banner, ctype, pinned_ip = safe_http_get("http://example.org/test")
+                    status, body, final_url, banner, ctype, pinned_ip, redirect_hops = safe_http_get("http://example.org/test")
                     
                     # Verify socket.create_connection was called directly with pinned_ip ("93.184.216.34", 80)
                     mock_conn.assert_called_once_with(("93.184.216.34", 80), timeout=2.5)

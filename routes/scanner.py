@@ -30,10 +30,12 @@ from scanner.phishing_detector import analyze_email
 from scanner.url_heuristics import (
     HIGH_RISK_TLDS,
     KNOWN_IMPERSONATED_BRANDS,
+    analyze_redirect_chain,
     assess_url,
     calculate_domain_entropy,
     check_brand_impersonation,
     is_ip_literal,
+    is_shortener,
 )
 from services.audit import record_event
 from services.limiter import limiter
@@ -355,17 +357,7 @@ def download_pdf_report(scan_id):
     )
 
 
-@scanner_bp.route('/scan/<int:scan_id>/pdf', methods=['GET'])
-def download_pdf(scan_id):
-    scan = EmailScan.query.get_or_404(scan_id)
-    pdf_bytes = generate_pdf_report(scan)
 
-    return send_file(
-        io.BytesIO(pdf_bytes),
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=f"guardly-scan-{scan.id}.pdf",
-    )
 
 
 @scanner_bp.route("/scans/<int:scan_id>/delete", methods=["POST"])
@@ -390,7 +382,6 @@ _calculate_domain_entropy = calculate_domain_entropy
 
 
 @scanner_bp.route("/scan/url", methods=["GET", "POST"])
-@login_required
 @limiter.limit("10 per minute")
 def scan_url():
     target_url = request.values.get("url", "").strip()
@@ -415,11 +406,15 @@ def scan_url():
     content_type = "Unknown"
     response_ms = 0
     redirect_destination = None
+    redirect_raw_hops = []
+    final_url = target_url
 
     target_ip = None
     try:
         start_time = time.time()
-        status_code, body, final_url, server_banner, content_type, pinned_ip = safe_http_get(target_url, timeout=2.5)
+        status_code, body, final_url, server_banner, content_type, pinned_ip, redirect_raw_hops = safe_http_get(
+            target_url, timeout=2.5, max_redirects=10
+        )
         response_ms = round((time.time() - start_time) * 1000)
         target_ip = pinned_ip
         if status_code > 0:
@@ -434,24 +429,45 @@ def scan_url():
     except Exception as err:
         http_status = "Offline / Connection Refused"
 
-    # Brand Impersonation & Typosquatting Analysis (Domain-scoped via url_heuristics)
+    # Enterprise Redirect Chain Telemetry & Risk Scoring
+    redirect_analysis = analyze_redirect_chain(target_url, final_url, redirect_raw_hops)
+
+    # Brand Impersonation & Typosquatting Analysis (Domain-scoped across chain)
     target_lower = target_url.lower()
     domain_host = domain.lower().split(":")[0]
-    detected_brand_impersonation = check_brand_impersonation(domain_host)
+    final_parsed = urllib.parse.urlparse(final_url)
+    final_domain = final_parsed.netloc or final_parsed.path
+    final_domain_host = final_domain.lower().split(":")[0]
+
+    detected_brand_impersonation = check_brand_impersonation(domain_host) or check_brand_impersonation(final_domain_host)
+    if not detected_brand_impersonation:
+        for hop in redirect_analysis["hops"]:
+            if hop.get("brand_impersonation"):
+                detected_brand_impersonation = hop["brand_impersonation"]
+                break
 
     # Security Heuristics Assessment
     is_ip = is_ip_literal(domain)
     domain_entropy = calculate_domain_entropy(domain_host)
-    has_high_risk_tld = any(domain_host.endswith(tld) for tld in HIGH_RISK_TLDS)
-    is_suspicious = is_ip or bool(detected_brand_impersonation) or has_high_risk_tld or any(kw in target_lower for kw in ("login", "verify", "secure", "bank", "account", "paypal", "phish"))
+    has_high_risk_tld = (
+        any(domain_host.endswith(tld) for tld in HIGH_RISK_TLDS)
+        or any(final_domain_host.endswith(tld) for tld in HIGH_RISK_TLDS)
+        or redirect_analysis["has_high_risk_tld"]
+    )
+    has_redirect_anomaly = (
+        redirect_analysis["risk_score"] >= 30
+        or redirect_analysis["has_loop"]
+        or redirect_analysis["has_https_downgrade"]
+    )
 
     local_heuristic_rules = [
-        {"name": "IP-Based Host Detector", "result": "Suspicious" if is_ip else "Passed", "icon": "bi-shield-x text-warning" if is_ip else "bi-shield-check text-success"},
+        {"name": "IP-Based Host Detector", "result": "Suspicious" if is_ip or redirect_analysis["has_ip_destination"] else "Passed", "icon": "bi-shield-x text-warning" if is_ip or redirect_analysis["has_ip_destination"] else "bi-shield-check text-success"},
         {"name": "Brand Impersonation Check", "result": "Suspicious" if detected_brand_impersonation else "Passed", "icon": "bi-shield-x text-warning" if detected_brand_impersonation else "bi-shield-check text-success"},
         {"name": "High-Risk TLD Rule", "result": "Suspicious" if has_high_risk_tld else "Passed", "icon": "bi-shield-x text-warning" if has_high_risk_tld else "bi-shield-check text-success"},
         {"name": "Domain Entropy Evaluator", "result": "Suspicious" if domain_entropy > 4.2 else "Passed", "icon": "bi-shield-x text-warning" if domain_entropy > 4.2 else "bi-shield-check text-success"},
+        {"name": "Redirect Chain Analyzer", "result": "Suspicious" if has_redirect_anomaly else ("Notice" if redirect_analysis["has_redirects"] else "Passed"), "icon": "bi-shield-x text-warning" if has_redirect_anomaly else ("bi-info-circle text-info" if redirect_analysis["has_redirects"] else "bi-shield-check text-success")},
         {"name": "HTTP Live Reachability", "result": "Passed" if "200" in http_status or "30" in http_status else "Notice", "icon": "bi-shield-check text-success" if "200" in http_status or "30" in http_status else "bi-info-circle text-info"},
-        {"name": "SSL / TLS Scheme Check", "result": "Passed" if parsed.scheme == "https" else "Notice", "icon": "bi-shield-check text-success" if parsed.scheme == "https" else "bi-info-circle text-warning"},
+        {"name": "SSL / TLS Scheme Check", "result": "Passed" if (parsed.scheme == "https" and not redirect_analysis["has_https_downgrade"]) else "Notice", "icon": "bi-shield-check text-success" if (parsed.scheme == "https" and not redirect_analysis["has_https_downgrade"]) else "bi-info-circle text-warning"},
     ]
 
     suspicious_rules_count = sum(1 for v in local_heuristic_rules if v["result"] == "Suspicious")
@@ -467,6 +483,8 @@ def scan_url():
     analysis_data = {
         "target_url": target_url,
         "domain": domain,
+        "final_url": final_url,
+        "final_domain": final_domain,
         "scheme": parsed.scheme or "http",
         "path": parsed.path or "/",
         "is_ip": is_ip,
@@ -479,6 +497,7 @@ def scan_url():
         "content_type": content_type,
         "response_ms": response_ms,
         "redirect_destination": redirect_destination,
+        "redirect_analysis": redirect_analysis,
         "md5_hash": md5_hash,
         "sha1_hash": sha1_hash,
         "sha256_hash": sha256_hash,
@@ -573,6 +592,8 @@ def scan_ioc():
 
 @scanner_bp.route("/api/v1/geolocation/health")
 @scanner_bp.route("/admin/geolocation/health")
+@login_required
+@roles_required(User.ROLE_ADMIN, User.ROLE_ANALYST)
 def geolocation_health():
     """
     Health check diagnostic API endpoint for IP Geolocation Subsystem.
