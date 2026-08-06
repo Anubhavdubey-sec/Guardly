@@ -125,7 +125,15 @@ def _scan_analysis(scan, email_data):
 
 
 def _scan_scope_query():
-    return EmailScan.query
+    user = getattr(g, "current_user", None)
+    if user:
+        return EmailScan.query.filter(
+            or_(
+                EmailScan.user_id == user.id,
+                EmailScan.user_id.is_(None),
+            )
+        )
+    return EmailScan.query.filter(EmailScan.user_id.is_(None))
 
 
 def _accessible_scan_or_404(scan_id):
@@ -552,7 +560,7 @@ def scan_ioc():
 
     # Query related scans in database
     pattern = f"%{query}%"
-    matching_scans = EmailScan.query.filter(
+    matching_scans = _scan_scope_query().filter(
         or_(
             EmailScan.urls.ilike(pattern),
             EmailScan.iocs.ilike(pattern),

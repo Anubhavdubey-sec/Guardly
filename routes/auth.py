@@ -106,8 +106,8 @@ def register():
 @roles_required(User.ROLE_ADMIN, User.ROLE_ANALYST)
 def dashboard():
     user = g.current_user
-    scans = EmailScan.query.order_by(EmailScan.scan_time.desc()).all()
-    scan_scope = "all reports"
+    scans = EmailScan.query.filter_by(user_id=user.id).order_by(EmailScan.scan_time.desc()).all()
+    scan_scope = "my reports"
 
     total_scans = len(scans)
     stats = {
