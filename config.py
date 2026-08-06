@@ -57,5 +57,16 @@ class Config:
     PUBLIC_LOOKUP_TIMEOUT_SECONDS = int(os.getenv("PUBLIC_LOOKUP_TIMEOUT_SECONDS", "3"))
     PUBLIC_LOOKUP_MAX_LOOKUPS = int(os.getenv("PUBLIC_LOOKUP_MAX_LOOKUPS", "5"))
 
+    # Geolocation Subsystem Configuration
+    GEOLOCATION_CITY_PATH = os.getenv("GEOLOCATION_CITY_PATH", os.path.join(BASE_DIR, "data", "GeoLite2-City.mmdb"))
+    GEOLOCATION_ASN_PATH = os.getenv("GEOLOCATION_ASN_PATH", os.path.join(BASE_DIR, "data", "GeoLite2-ASN.mmdb"))
+    GEOLOCATION_CACHE_MAX_SIZE = int(os.getenv("GEOLOCATION_CACHE_MAX_SIZE", "10000"))
+    GEOLOCATION_CACHE_TTL = int(os.getenv("GEOLOCATION_CACHE_TTL", "3600"))
+    GEOLOCATION_CACHE_NEGATIVE_TTL = int(os.getenv("GEOLOCATION_CACHE_NEGATIVE_TTL", "300"))
+    GEOLOCATION_FALLBACK_ENABLED = os.getenv("GEOLOCATION_FALLBACK_ENABLED", "True").lower() in ("true", "1", "t")
+    GEOLOCATION_FALLBACK_PROVIDER = os.getenv("GEOLOCATION_FALLBACK_PROVIDER", "ip-api")
+    GEOLOCATION_FALLBACK_API_KEY = os.getenv("GEOLOCATION_FALLBACK_API_KEY", "")
+    GEOLOCATION_FALLBACK_TIMEOUT = float(os.getenv("GEOLOCATION_FALLBACK_TIMEOUT", "2.0"))
+
     # Debug Configuration
     DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")

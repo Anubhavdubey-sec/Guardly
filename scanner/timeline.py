@@ -33,6 +33,7 @@ class MailHop:
     is_internal: bool = False
     auth_info: Optional[str] = None
     location_display: str = "Location Unavailable"
+    geo_data: Optional[Dict[str, Any]] = None
     observations: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -52,6 +53,7 @@ class MailHop:
             "is_internal": self.is_internal,
             "auth_info": self.auth_info or "",
             "location_display": self.location_display,
+            "geo_data": self.geo_data or {},
             "observations": self.observations,
         }
 
@@ -243,13 +245,12 @@ def parse_received_header(header_str: str) -> Optional[MailHop]:
 
     # Local IP Location Lookup
     loc_display = "Location Unavailable"
+    geo_data = None
     if from_ip:
         loc_info = get_ip_location(from_ip)
         if loc_info and isinstance(loc_info, dict):
-            city = loc_info.get("city", "")
-            country = loc_info.get("country", "")
-            if city or country:
-                loc_display = f"{city}, {country}".strip(", ")
+            geo_data = loc_info
+            loc_display = loc_info.get("location_display") or "Location Unavailable"
 
     return MailHop(
         hop_number=0,  # Will be assigned during chronological sequencing
@@ -268,6 +269,7 @@ def parse_received_header(header_str: str) -> Optional[MailHop]:
         is_internal=is_internal,
         auth_info=auth_info,
         location_display=loc_display,
+        geo_data=geo_data,
         observations=observations,
     )
 

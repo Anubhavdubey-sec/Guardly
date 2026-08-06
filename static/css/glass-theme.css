@@ -188,10 +188,10 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
     background: var(--glass-panel-dark) !important;
     -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border-dark) !important;
+    border: 1.5px solid rgba(239, 68, 68, 0.55) !important;
     border-radius: var(--glass-radius-md) !important;
-    box-shadow: var(--glass-shadow-dark);
-    transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease;
+    box-shadow: var(--glass-shadow-dark), 0 0 14px rgba(239, 68, 68, 0.18) !important;
+    transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease;
 }
 
 .card:hover,
@@ -206,10 +206,11 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
 .provider-card-grid article:hover {
     transform: translateY(-3px);
     background: var(--glass-panel-dark-raised) !important;
+    border-color: #EF4444 !important;
     box-shadow:
         0 1px 0 0 var(--glass-highlight-dark) inset,
         0 28px 56px -16px rgba(0, 0, 0, 0.6),
-        0 4px 12px rgba(0, 0, 0, 0.4);
+        0 0 24px rgba(239, 68, 68, 0.35) !important;
 }
 
 /* ---------- Buttons: glass pills with a soft sheen ---------- */
@@ -422,9 +423,9 @@ html.light-mode .dropdown-menu, body.light-mode .dropdown-menu, body[data-bs-the
 html.light-mode .modal-content, body.light-mode .modal-content, body[data-bs-theme="light"] .modal-content,
 html.light-mode .list-group-item, body.light-mode .list-group-item, body[data-bs-theme="light"] .list-group-item,
 html.light-mode .header-table, body.light-mode .header-table, body[data-bs-theme="light"] .header-table {
-    background: rgba(255, 255, 255, 0.82) !important;
-    border: 1px solid rgba(203, 213, 225, 0.75) !important;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.95) inset, 0 12px 32px -8px rgba(30, 41, 89, 0.14), 0 2px 6px rgba(30, 41, 89, 0.06) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    border: 1.5px solid rgba(220, 38, 38, 0.6) !important;
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.95) inset, 0 12px 32px -8px rgba(220, 38, 38, 0.15), 0 0 14px rgba(220, 38, 38, 0.12) !important;
     color: #0F172A !important;
 }
 
@@ -883,11 +884,133 @@ body[data-bs-theme="light"] .vt-input-group .form-control:focus {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
 }
 
-html.light-mode .vt-input-group .input-group-lg > i,
-body.light-mode .vt-input-group .input-group-lg > i,
-body[data-bs-theme="light"] .vt-input-group .input-group-lg > i {
-    color: #2563EB !important;
+/* ==========================================================================
+   CURVED SQUARE MAP CARD & PULSATING MARKER STYLING
+   ========================================================================== */
+
+.curved-map-card-wrapper {
+    border-radius: 24px !important;
+    overflow: hidden !important;
+    position: relative !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+    transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
+
+.curved-map-card-wrapper:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+html.light-mode .curved-map-card-wrapper,
+body.light-mode .curved-map-card-wrapper,
+body[data-bs-theme="light"] .curved-map-card-wrapper {
+    background: #FFFFFF !important;
+    border: 1px solid rgba(203, 213, 225, 0.9) !important;
+    box-shadow: 0 12px 32px rgba(30, 41, 89, 0.14) !important;
+}
+
+.custom-pulse-marker {
+    position: relative;
+}
+
+.pulse-marker-ring {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    left: -4px;
+    top: -4px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.4);
+    border: 2px solid #3B82F6;
+    animation: markerPulseRing 1.8s ease-out infinite;
+}
+
+.pulse-marker-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #2563EB;
+    border: 2.5px solid #FFFFFF;
+    box-shadow: 0 0 12px #2563EB;
+    margin: 5px;
+}
+
+/* ==========================================================================
+   LOGO SHINING & SHIMMER SWEEP ANIMATION (UPLOAD PAGE HERO LOGO)
+   ========================================================================== */
+
+.logo-shimmer-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
+    border-radius: 24px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1.5px solid rgba(239, 68, 68, 0.55);
+    overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.logo-shimmer-wrapper::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -150%;
+    width: 60%;
+    height: 200%;
+    background: linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.2) 30%,
+        rgba(255, 255, 255, 0.85) 50%,
+        rgba(255, 255, 255, 0.2) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: rotate(25deg);
+    animation: logoLightShine 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.logo-shimmer-wrapper .guardly-soldier-svg {
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.45)) drop-shadow(0 0 20px rgba(59, 130, 246, 0.35));
+    animation: logoGlintPulse 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes logoLightShine {
+    0% {
+        left: -150%;
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    60% {
+        left: 180%;
+        opacity: 1;
+    }
+    100% {
+        left: 180%;
+        opacity: 0;
+    }
+}
+
+@keyframes logoGlintPulse {
+    0% {
+        filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4)) drop-shadow(0 0 16px rgba(59, 130, 246, 0.3));
+    }
+    50% {
+        filter: drop-shadow(0 0 22px rgba(245, 158, 11, 0.85)) drop-shadow(0 0 36px rgba(59, 130, 246, 0.7));
+    }
+    100% {
+        filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4)) drop-shadow(0 0 16px rgba(59, 130, 246, 0.3));
+    }
+}
+
+
 
 
 

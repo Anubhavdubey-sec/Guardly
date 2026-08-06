@@ -1,7 +1,11 @@
-import json
-import socket
-import urllib.request
-from services.ssrf import is_ip_private_or_internal, validate_url_ssrf
+"""
+Guardly Public & Geolocation Context Integration Module
+Delegates all IP classification and location resolving to services.geolocation.GeolocationService,
+ensuring a unified, cached, offline-first geolocation pipeline.
+"""
+
+from typing import Any, Dict, Optional
+from services.geolocation import get_geolocation_service, GeoResult
 
 COUNTRY_FLAGS = {
     "US": "🇺🇸", "GB": "🇬🇧", "CA": "🇨🇦", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -9,85 +13,70 @@ COUNTRY_FLAGS = {
     "RU": "🇷🇺", "NL": "🇳🇱", "SG": "🇸🇬", "LOCAL": "🏠"
 }
 
-def get_ip_location(ip_str):
+
+def get_ip_location(ip_str: str) -> Optional[Dict[str, Any]]:
+    """
+    Resolves IP geolocation by invoking GeolocationService.
+    Returns a unified dictionary containing all GeoResult fields and UI display helpers.
+    Guaranteed never to crash.
+    """
     if not ip_str or not isinstance(ip_str, str):
         return None
 
-    ip_clean = ip_str.strip()
+    clean_ip = ip_str.strip("[]() ")
+    geo_service = get_geolocation_service()
+    geo_res = geo_service.lookup(clean_ip)
 
-    # Check for private, loopback, or internal IP addresses via ipaddress module
-    if is_ip_private_or_internal(ip_clean):
-        return {
-            "ip": ip_clean,
-            "city": "Local / Internal Network",
-            "region": "Intranet",
-            "country": "Private Subnet",
-            "country_code": "LOCAL",
-            "flag": "🏠",
-            "org": "Private RFC1918 Subnet",
-            "location_display": "🏠 Private Subnet (Internal Network)"
-        }
+    # Determine flag emoji and display strings
+    code = geo_res.country_code if geo_res.country_code not in ("Unknown", "Unavailable") else ("LOCAL" if geo_res.address_type != "public" else "US")
+    flag = COUNTRY_FLAGS.get(code, "🏠" if geo_res.address_type != "public" else "🌐")
 
-    # Fast offline fallback dictionary for common public DNS / Cloud IPs
-    known_ips = {
-        "8.8.8.8": {"city": "Mountain View", "region": "California", "country": "United States", "code": "US", "org": "Google LLC"},
-        "8.8.4.4": {"city": "Mountain View", "region": "California", "country": "United States", "code": "US", "org": "Google LLC"},
-        "1.1.1.1": {"city": "Los Angeles", "region": "California", "country": "United States", "code": "US", "org": "Cloudflare Inc"},
-        "9.9.9.9": {"city": "Berkeley", "region": "California", "country": "United States", "code": "US", "org": "Quad9"}
-    }
+    if geo_res.address_type != "public":
+        city = "Local / Internal Network"
+        region = "Intranet"
+        country = "Private Subnet"
+        org = "Private Subnet"
+        location_display = f"🏠 Private Subnet ({geo_res.address_type.title()})"
+    else:
+        city = geo_res.city if geo_res.city != "Unknown" else "Public Gateway Node"
+        region = geo_res.region if geo_res.region != "Unknown" else "Global Subnet"
+        country = geo_res.country if geo_res.country != "Unknown" else "Public Internet"
+        org = geo_res.organization if geo_res.organization != "Unknown" else "Internet Service Provider"
 
-    if ip_clean in known_ips:
-        k = known_ips[ip_clean]
-        return {
-            "ip": ip_clean,
-            "city": k["city"],
-            "region": k["region"],
-            "country": k["country"],
-            "country_code": k["code"],
-            "flag": COUNTRY_FLAGS.get(k["code"], "🌐"),
-            "org": k["org"],
-            "location_display": f"{COUNTRY_FLAGS.get(k['code'], '🌐')} {k['city']}, {k['country']} ({k['org']})"
-        }
+        if city != "Public Gateway Node" and country != "Public Internet":
+            location_display = f"{flag} {city}, {country} ({org})"
+        else:
+            location_display = f"{flag} Public Internet IP Node ({org})"
 
-    # Live IP Geolocation API attempt (ip-api.com) with 1.5s timeout
-    try:
-        url = f"http://ip-api.com/json/{ip_clean}?fields=status,message,country,countryCode,regionName,city,isp,org,query"
-        req = urllib.request.Request(url, headers={"User-Agent": "Guardly-IP-Geo/1.0"})
-        with urllib.request.urlopen(req, timeout=1.5) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if data.get("status") == "success":
-                code = data.get("countryCode", "US")
-                city = data.get("city", "Unknown City")
-                country = data.get("country", "Unknown Country")
-                org = data.get("org") or data.get("isp") or "Public Network"
-                flag = COUNTRY_FLAGS.get(code, "🌐")
-                return {
-                    "ip": ip_clean,
-                    "city": city,
-                    "region": data.get("regionName", ""),
-                    "country": country,
-                    "country_code": code,
-                    "flag": flag,
-                    "org": org,
-                    "location_display": f"{flag} {city}, {country} ({org})"
-                }
-    except Exception:
-        pass
-
-    # Generic fallback if offline or API unavailable
     return {
-        "ip": ip_clean,
-        "city": "Public Gateway Node",
-        "region": "Global Subnet",
-        "country": "Public Internet",
-        "country_code": "US",
-        "flag": "🌐",
-        "org": "Internet Service Provider",
-        "location_display": "🌐 Public Internet IP Node"
+        "ip": clean_ip,
+        "ip_version": geo_res.ip_version,
+        "address_type": geo_res.address_type,
+        "city": city,
+        "region": region,
+        "country": country,
+        "country_code": code,
+        "flag": flag,
+        "latitude": geo_res.latitude,
+        "longitude": geo_res.longitude,
+        "timezone": geo_res.timezone,
+        "asn": geo_res.asn,
+        "organization": org,
+        "network": geo_res.network,
+        "source": geo_res.source,
+        "status": geo_res.status,
+        "provider_used": geo_res.provider_used,
+        "org": org,
+        "location_display": location_display,
+        "geo_result": geo_res.to_dict(),
     }
 
 
 class PublicLookupClient:
+    """
+    Context lookup client forwarding IP queries to GeolocationService.
+    """
+
     def __init__(self, timeout_seconds=3, max_lookups=5):
         self.timeout_seconds = timeout_seconds
         self.max_lookups = max_lookups
@@ -101,7 +90,7 @@ class PublicLookupClient:
                     lookups.append(geo)
 
         return {
-            "provider": "Public RDAP and IP network context",
+            "provider": "Guardly Offline-First Geolocation & RDAP Subsystem",
             "message": "Public context lookups active.",
             "lookups": lookups,
         }

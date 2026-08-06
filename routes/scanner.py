@@ -574,3 +574,16 @@ def scan_ioc():
         })
 
     return render_template("ioc_result.html", analysis=analysis_data)
+
+
+@scanner_bp.route("/api/v1/geolocation/health")
+@scanner_bp.route("/admin/geolocation/health")
+def geolocation_health():
+    """
+    Health check diagnostic API endpoint for IP Geolocation Subsystem.
+    Exposes MaxMind City/ASN database status, build epochs, cache stats, and fallback status.
+    """
+    from services.geolocation import get_geolocation_service
+    geo_svc = get_geolocation_service(current_app.config)
+    return jsonify(geo_svc.health_check())
+
