@@ -27,6 +27,7 @@ from models.user import User, db
 from routes.auth import login_required, roles_required
 from scanner.email_parser import parse_email
 from scanner.phishing_detector import analyze_email
+from services.yara_generator import generate_sigma_rule, generate_yara_rule
 from scanner.url_heuristics import (
     HIGH_RISK_TLDS,
     KNOWN_IMPERSONATED_BRANDS,
@@ -204,9 +205,11 @@ def upload():
     if not original_name or not is_allowed_email(original_name):
         return render_template("upload.html", error="Only .eml email files are accepted."), 400
 
-    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    upload_dir = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
     unique_name = f"{uuid.uuid4().hex}_{original_name}"
-    file_path = os.path.join(upload_dir, unique_name)
+    file_path = os.path.abspath(os.path.join(upload_dir, unique_name))
+    if not file_path.startswith(upload_dir):
+        return render_template("upload.html", error="Invalid file upload path."), 400
 
     try:
         uploaded_file.save(file_path)
@@ -610,4 +613,28 @@ def geolocation_health():
     from services.geolocation import get_geolocation_service
     geo_svc = get_geolocation_service(current_app.config)
     return jsonify(geo_svc.health_check())
+
+
+@scanner_bp.route("/scan/<int:scan_id>/yara")
+def download_yara_rule(scan_id):
+    scan = _scan_scope_query().filter(EmailScan.id == scan_id).first_or_404()
+    payload = _report_payload(scan)
+    yara_code = generate_yara_rule(payload["email"], payload["analysis"])
+    return Response(
+        yara_code,
+        mimetype="text/plain",
+        headers={"Content-Disposition": f"attachment; filename=guardly_rule_scan_{scan.id}.yar"}
+    )
+
+
+@scanner_bp.route("/scan/<int:scan_id>/sigma")
+def download_sigma_rule(scan_id):
+    scan = _scan_scope_query().filter(EmailScan.id == scan_id).first_or_404()
+    payload = _report_payload(scan)
+    sigma_code = generate_sigma_rule(payload["email"], payload["analysis"])
+    return Response(
+        sigma_code,
+        mimetype="text/yaml",
+        headers={"Content-Disposition": f"attachment; filename=guardly_sigma_scan_{scan.id}.yml"}
+    )
 

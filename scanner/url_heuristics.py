@@ -250,10 +250,11 @@ def check_brand_impersonation(domain: str) -> Optional[str]:
 
 def assess_url(url: str) -> List[str]:
     """
-    Assess URL against heuristic security rules:
-    - IP-based host
-    - Brand impersonation
-    - High-risk TLD
+    Assess URL against comprehensive threat intelligence rules:
+    - IP-based host & obfuscated numeric IPs (Hex/Decimal/Octal)
+    - Brand impersonation & Homographs
+    - Punycode IDN encoding
+    - High-risk TLD & URL shorteners
     - High domain entropy (> 4.2)
     - Suspicious path/query keywords
 
@@ -275,20 +276,24 @@ def assess_url(url: str) -> List[str]:
 
     reasons: List[str] = []
 
-    # 1. IP-based host
+    # 1. IP-based host / Obfuscated IP
     is_ip = is_ip_literal(parsed.netloc or parsed.path)
-    if is_ip:
+    if is_ip or domain_host.startswith("0x") or domain_host.isdigit():
         reasons.append("URL uses an IP address instead of a domain name.")
 
-    # 2. Brand impersonation
+    # 2. Brand impersonation & Homographs
     brand = check_brand_impersonation(domain_host)
     if brand:
         reasons.append(f"Appears to impersonate {brand}.")
+    elif domain_host.startswith("xn--"):
+        reasons.append("URL uses Punycode (IDN) encoding, a potential homograph attack.")
 
-    # 3. High-risk TLD
+    # 3. High-risk TLD & Shorteners
     matched_tld = next((tld for tld in HIGH_RISK_TLDS if domain_host.endswith(tld)), None)
     if matched_tld:
         reasons.append(f"Uses a high-risk top-level domain ({matched_tld}).")
+    elif is_shortener(domain_host):
+        reasons.append(f"URL shortener service ({domain_host}) conceals destination.")
 
     # 4. Domain entropy (> 4.2)
     entropy = calculate_domain_entropy(domain_host)

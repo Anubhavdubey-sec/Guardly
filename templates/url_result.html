@@ -90,12 +90,21 @@
                         </strong>
                     </div>
                     {% if analysis.ip_location %}
-                    <div class="col-sm-12 pt-2 border-top border-secondary border-opacity-25 mt-2">
-                        <span class="text-muted d-block">SERVER IP GEOLOCATION</span>
-                        <strong class="text-info fs-6">
-                            {{ analysis.ip_location.flag }} {{ analysis.ip_location.city }}, {{ analysis.ip_location.country }} ({{ analysis.ip_location.org }})
-                        </strong>
-                        <span class="text-muted small ms-2 font-mono">[{{ analysis.ip_location.ip }}]</span>
+                    <div class="col-sm-12 pt-3 border-top border-secondary border-opacity-25 mt-2">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-7">
+                                <span class="text-muted d-block">SERVER IP GEOLOCATION</span>
+                                <strong class="text-info fs-6 d-block">
+                                    {{ analysis.ip_location.flag }} {{ analysis.ip_location.city }}, {{ analysis.ip_location.country }} ({{ analysis.ip_location.org }})
+                                </strong>
+                                <span class="text-muted small font-mono">IP: [{{ analysis.ip_location.ip }}] | ASN: {{ analysis.ip_location.asn or 'N/A' }}</span>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="curved-map-card-wrapper position-relative rounded overflow-hidden border border-secondary border-opacity-25 shadow-sm" style="min-height: 180px; height: 180px;">
+                                    <div id="urlGeoMap" style="width: 100%; height: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -222,4 +231,53 @@
     </div>
 
 </div>
+
+{% if analysis.ip_location %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const mapContainer = document.getElementById("urlGeoMap");
+        if (!mapContainer || typeof L === 'undefined') return;
+
+        {% if analysis.ip_location.latitude and analysis.ip_location.longitude %}
+            const lat = {{ analysis.ip_location.latitude }};
+            const lon = {{ analysis.ip_location.longitude }};
+            
+            const map = L.map('urlGeoMap', {
+                center: [lat, lon],
+                zoom: 9,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            const pulseIcon = L.divIcon({
+                className: 'custom-pulse-marker',
+                html: '<div class="pulse-marker-ring"></div><div class="pulse-marker-dot"></div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            L.marker([lat, lon], { icon: pulseIcon }).addTo(map);
+        {% else %}
+            const map = L.map('urlGeoMap', {
+                center: [20.0, 0.0],
+                zoom: 2,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd'
+            }).addTo(map);
+        {% endif %}
+    });
+</script>
+{% endif %}
 {% endblock %}

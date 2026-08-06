@@ -1,6 +1,9 @@
 import re
 
+from scanner.header_analyzer import analyze_email_headers
 from scanner.url_heuristics import assess_url
+from services.playbook_engine import execute_soc_playbooks
+from services.yara_generator import generate_sigma_rule, generate_yara_rule
 
 EXECUTABLE_EXTENSIONS = {".exe", ".bat", ".cmd", ".scr", ".vbs", ".js", ".jar", ".ps1", ".msi"}
 
@@ -266,20 +269,37 @@ def analyze_email(email_data):
             "reasons": reasons,
         })
 
-    # Header authentication simulation
-    auth_header = str(email_data.get("headers", {}).get("Authentication-Results", "")).lower()
-    spf = "pass" if "spf=pass" in auth_header else ("fail" if "spf=fail" in auth_header else "not available")
-    dkim = "pass" if "dkim=pass" in auth_header else ("fail" if "dkim=fail" in auth_header else "not available")
-    dmarc = "pass" if "dmarc=pass" in auth_header else ("fail" if "dmarc=fail" in auth_header else "not available")
+    # DFIR Email Header Analysis Engine
+    headers_dict = email_data.get("headers", {})
+    header_dfir = analyze_email_headers(headers_dict)
+    
+    # Extract auth statuses for backwards compatibility
+    spf = header_dfir["authentication"]["spf"]["status"].lower()
+    dkim = header_dfir["authentication"]["dkim"]["status"].lower()
+    dmarc = header_dfir["authentication"]["dmarc"]["status"].lower()
 
-    if spf == "fail":
-        score += 15
+    if spf in ("fail", "permerror"):
+        score += 25
         findings.append("SPF authentication check failed.")
         categories.append("Authentication failure")
-    if dmarc == "fail":
-        score += 15
+    if dkim in ("fail", "permerror"):
+        score += 25
+        findings.append("DKIM authentication check failed.")
+        categories.append("Authentication failure")
+    if dmarc in ("fail", "permerror"):
+        score += 30
         findings.append("DMARC authentication check failed.")
         categories.append("Authentication failure")
+
+    # Record Critical/High Header DFIR Anomalies (e.g. Free Email Brand Impersonation or Display Name Spoofing)
+    for dfir_finding in header_dfir.get("findings", []):
+        sev = dfir_finding.get("severity")
+        title = dfir_finding.get("finding")
+        explanation = dfir_finding.get("explanation")
+        if title in ("Display Name Email Spoofing", "Free Email Brand Impersonation"):
+            score += 25
+            findings.append(f"{title}: {explanation}")
+            categories.append("Header anomaly")
 
     score = min(100, score)
     categories = list(dict.fromkeys(categories))
@@ -291,11 +311,19 @@ def analyze_email(email_data):
     else:
         verdict = "Low Risk"
 
-    return {
+    res_dict = {
         "score": score,
         "verdict": verdict,
         "findings": findings,
         "categories": categories,
         "url_assessments": url_assessments,
         "auth_results": {"spf": spf, "dkim": dkim, "dmarc": dmarc},
+        "header_analysis": header_dfir,
     }
+
+    # Generate Automated YARA, SIEM Sigma Rules, and SOC Incident Response Playbooks
+    res_dict["yara_rule"] = generate_yara_rule(email_data, res_dict)
+    res_dict["sigma_rule"] = generate_sigma_rule(email_data, res_dict)
+    res_dict["soc_playbook"] = execute_soc_playbooks(email_data, res_dict)
+
+    return res_dict

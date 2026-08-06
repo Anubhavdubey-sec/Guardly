@@ -19,6 +19,7 @@ from routes.scanner import scanner_bp
 from services.audit import record_event
 from services.csrf import init_csrf
 from services.limiter import limiter
+from services.password_validator import validate_password
 
 
 def initialize_database():
@@ -150,6 +151,25 @@ def create_app(test_config=None):
             500,
         )
 
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+            "img-src 'self' data: https: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; "
+            "font-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
+            "connect-src 'self' https:; "
+            "frame-ancestors 'none';"
+        )
+        if app.config.get("SESSION_COOKIE_SECURE"):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
     return app
 
 
@@ -277,8 +297,9 @@ def create_admin(username, email):
         return
 
     password = click.prompt("Password", hide_input=True, confirmation_prompt=True)
-    if len(password) < 8:
-        raise click.UsageError("The administrator password must be at least 8 characters.")
+    is_valid, errors, _ = validate_password(password, username=username, email=email)
+    if not is_valid:
+        raise click.UsageError(f"Password rejected: {' '.join(errors)}")
     user = User(username=username, email=email, password=generate_password_hash(password), role=User.ROLE_ADMIN)
     db.session.add(user)
     db.session.flush()
@@ -297,8 +318,9 @@ def reset_admin_password(email):
         raise click.UsageError("No administrator account was found for that email address.")
 
     password = click.prompt("New password", hide_input=True, confirmation_prompt=True)
-    if len(password) < 8:
-        raise click.UsageError("The administrator password must be at least 8 characters.")
+    is_valid, errors, _ = validate_password(password, username=user.username, email=user.email)
+    if not is_valid:
+        raise click.UsageError(f"Password rejected: {' '.join(errors)}")
 
     user.password = generate_password_hash(password)
     record_event(
