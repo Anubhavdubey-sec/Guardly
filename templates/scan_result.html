@@ -29,10 +29,10 @@
         </div>
     </div>
     <div class="case-actions">
+        <a class="btn btn-outline-info btn-sm" href="{{ url_for('scanner.download_pdf_report', scan_id=scan.id) }}"><i class="bi bi-file-earmark-pdf me-1"></i> Export PDF</a>
         <button class="btn btn-outline-light btn-sm" type="button" data-copy-page-link><i class="bi bi-link-45deg"></i> Share</button>
         {% if current_user and current_user.role == 'admin' %}
-            <a class="btn btn-outline-light btn-sm" href="{{ url_for('scanner.export_scan_json', scan_id=scan.id) }}"><i class="bi bi-braces"></i> Export</a>
-            <a class="btn btn-primary btn-sm" href="{{ url_for('scanner.download_pdf_report', scan_id=scan.id) }}"><i class="bi bi-file-earmark-arrow-down"></i> Download</a>
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('scanner.export_scan_json', scan_id=scan.id) }}"><i class="bi bi-braces"></i> Export JSON</a>
         {% endif %}
     </div>
 </div>

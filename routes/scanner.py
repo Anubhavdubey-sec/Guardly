@@ -355,16 +355,28 @@ def export_scan_json(scan_id):
 @scanner_bp.route("/scans/<int:scan_id>/report.pdf")
 @login_required
 @roles_required(User.ROLE_ADMIN)
-def download_pdf_report(scan_id):
+def download_admin_pdf_report(scan_id):
+    from services.pdf_report_generator import generate_pdf_scan_report
     scan = _accessible_scan_or_404(scan_id)
-    email_data = _scan_email_data(scan)
-    analysis = _scan_analysis(scan, email_data)
-    report = build_scan_report(scan, email_data, analysis)
-    return send_file(
-        report,
+    payload = _report_payload(scan)
+    pdf_bytes = generate_pdf_scan_report(payload["email"], payload["analysis"], scan.id)
+    return Response(
+        pdf_bytes,
         mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"guardly-scan-{scan.id}.pdf",
+        headers={"Content-Disposition": f"attachment; filename=guardly_report_scan_{scan.id}.pdf"}
+    )
+
+
+@scanner_bp.route("/scan/<int:scan_id>/pdf")
+def download_pdf_report(scan_id):
+    from services.pdf_report_generator import generate_pdf_scan_report
+    scan = _scan_scope_query().filter(EmailScan.id == scan_id).first_or_404()
+    payload = _report_payload(scan)
+    pdf_bytes = generate_pdf_scan_report(payload["email"], payload["analysis"], scan.id)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=guardly_report_scan_{scan.id}.pdf"}
     )
 
 
