@@ -25,8 +25,8 @@
     --glass-border-light: rgba(255, 255, 255, 0.6);
     --glass-highlight-light: rgba(255, 255, 255, 0.85);
 
-    --glass-blur: blur(24px) saturate(180%);
-    --glass-blur-strong: blur(36px) saturate(190%);
+    --glass-blur: blur(12px) saturate(130%);
+    --glass-blur-strong: blur(16px) saturate(140%);
     --glass-radius-lg: 22px;
     --glass-radius-md: 16px;
     --glass-radius-sm: 12px;
@@ -69,6 +69,9 @@ body.soc-body::after {
     filter: blur(60px) saturate(150%);
     opacity: 0.55;
     animation: glassAuroraDrift 34s ease-in-out infinite alternate;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
 }
 
 body.soc-body::after {
@@ -93,14 +96,13 @@ body[data-bs-theme="light"].soc-body {
 .soc-layout { gap: 0; }
 
 .soc-sidebar {
-    background: var(--glass-panel-dark) !important;
-    -webkit-backdrop-filter: var(--glass-blur-strong);
-    backdrop-filter: var(--glass-blur-strong);
+    background: rgba(12, 18, 33, 0.95) !important;
     border-right: 1px solid var(--glass-border-dark) !important;
     box-shadow: var(--glass-shadow-dark);
     margin: 12px 0 12px 12px;
     border-radius: var(--glass-radius-lg);
     height: calc(100vh - 24px);
+    flex-shrink: 0;
     transition: width 220ms ease, min-width 220ms ease, max-width 220ms ease !important;
 }
 
@@ -125,23 +127,20 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
 }
 
 .soc-topbar {
-    background: var(--glass-panel-dark) !important;
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    background: rgba(12, 18, 33, 0.95) !important;
     border: 1px solid var(--glass-border-dark) !important;
     box-shadow: var(--glass-shadow-dark);
     border-radius: var(--glass-radius-md);
     margin: 12px 12px 0 12px;
     width: auto;
+    flex-shrink: 0;
 }
 
 .soc-main-wrapper { background: transparent !important; }
 .soc-content, .public-content { background: transparent !important; }
 
 .public-navbar {
-    background: var(--glass-panel-dark) !important;
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    background: rgba(12, 18, 33, 0.95) !important;
     border-bottom: 1px solid var(--glass-border-dark) !important;
     box-shadow: var(--glass-shadow-dark);
     margin: 12px 12px 0 12px;
@@ -151,9 +150,7 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
 .public-wrapper { background: transparent !important; }
 
 .public-footer {
-    background: var(--glass-panel-dark) !important;
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    background: rgba(12, 18, 33, 0.95) !important;
     border: 1px solid var(--glass-border-dark) !important;
     box-shadow: var(--glass-shadow-dark);
     margin: 0 12px 12px 12px;
@@ -164,6 +161,7 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
 .card,
 .soc-card,
 .auth-card,
+.upload-card,
 .upload-hero-card,
 .stat-card,
 .kpi-card,
@@ -171,7 +169,10 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
 .context-card,
 .vt-card,
 .indicator-tile,
+.indicator-card,
+.ioc-card,
 .finding-row,
+.finding-item,
 .score-card,
 .provider-card-grid article,
 .relationship-card,
@@ -180,18 +181,36 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
 .quiet-state,
 .vt-feature-box,
 .alert-queue-row,
+.intel-provider-card,
+.attachment-card,
+.feature-tile,
+.hero-node-tile,
 .dropdown-menu,
 .modal-content,
 .list-group-item,
 .header-table,
 .email-body {
-    background: var(--glass-panel-dark) !important;
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    background: rgba(14, 21, 37, 0.92) !important;
     border: 1.5px solid rgba(239, 68, 68, 0.55) !important;
     border-radius: var(--glass-radius-md) !important;
     box-shadow: var(--glass-shadow-dark), 0 0 14px rgba(239, 68, 68, 0.18) !important;
     transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease;
+    transform: translateZ(0);
+    contain: layout style;
+    isolation: isolate;
+    backface-visibility: hidden;
+}
+
+.soc-table-row,
+.alert-queue-row,
+.finding-row,
+.finding-item,
+.timeline-hop-card,
+.indicator-card,
+.ioc-card,
+.list-group-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 54px;
 }
 
 .card:hover,
@@ -542,7 +561,12 @@ html.light-mode .table tbody tr:hover, body.light-mode .table tbody tr:hover, bo
 
 /* ---------- Small screens: reduce the floating-panel margins ---------- */
 @media (max-width: 991.98px) {
-    .soc-sidebar, .soc-topbar, .public-navbar, .public-footer {
+    .soc-sidebar {
+        margin: 0 !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+    }
+    .soc-topbar, .public-navbar, .public-footer {
         margin: 8px;
         border-radius: var(--glass-radius-sm);
     }

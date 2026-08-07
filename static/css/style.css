@@ -34,7 +34,8 @@ html, body {
     padding: 0;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    height: 100%;
+    overflow: hidden;
     background-color: var(--bg-dark);
     color: var(--text-main);
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -67,6 +68,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .skip-link:focus { transform: translate(-50%, 0); }
 
+/* Fast, Hardware-Accelerated Responsive Scrolling */
+html, body, div, main, nav, section, article, aside, header, table, pre, code, ul, ol {
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
     width: 8px;
@@ -74,16 +80,92 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-    background: #060a14;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #1e293b;
+    background: rgba(6, 10, 20, 0.6);
     border-radius: 4px;
 }
 
+::-webkit-scrollbar-thumb {
+    background: rgba(30, 41, 59, 0.85);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
 ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+    background: rgba(59, 130, 246, 0.6);
+    border-color: rgba(96, 165, 250, 0.4);
+}
+
+/* Universal Scrollable Component Optimizations */
+.table-responsive,
+.pipeline-timeline,
+.email-body,
+.analysis-nav,
+.investigation-tabs,
+.case-tabs,
+.vt-tabs,
+.indicator-detail,
+.indicator-card code,
+.indicator-expanded,
+.header-table,
+.alert-queue,
+.modal-body,
+.dropdown-menu {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: auto !important;
+}
+
+/* Universal GPU Hardware Layer Compositing & Stutter Elimination across All Pages */
+.card,
+.soc-card,
+.auth-card,
+.upload-card,
+.upload-hero-card,
+.stat-card,
+.kpi-card,
+.investigation-card,
+.context-card,
+.vt-card,
+.indicator-tile,
+.indicator-card,
+.ioc-card,
+.finding-row,
+.finding-item,
+.score-card,
+.provider-card-grid article,
+.relationship-card,
+.timeline-section,
+.timeline-hop-card,
+.quiet-state,
+.vt-feature-box,
+.alert-queue-row,
+.intel-provider-card,
+.attachment-card,
+.feature-tile,
+.hero-node-tile,
+.dropdown-menu,
+.modal-content,
+.list-group-item,
+.header-table,
+.email-body,
+.soc-table {
+    transform: translateZ(0);
+    contain: layout style;
+    isolation: isolate;
+    backface-visibility: hidden;
+}
+
+/* Off-Screen Rendering Optimizations for Fast Scroll Acceleration */
+.soc-table-row,
+.alert-queue-row,
+.finding-row,
+.finding-item,
+.timeline-hop-card,
+.indicator-card,
+.ioc-card,
+.list-group-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 54px;
 }
 
 /* Text & Typography Rules */
@@ -106,17 +188,20 @@ p {
 
 /* Base Layout Structure */
 .soc-body {
-    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
 .soc-layout {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* Sidebar Component */
@@ -124,11 +209,14 @@ p {
     width: 260px;
     min-width: 260px;
     max-width: 260px;
+    height: 100vh;
     background-color: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
     z-index: 1000;
 }
 
@@ -155,6 +243,10 @@ p {
 .sidebar-nav {
     padding: 20px 16px;
     flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
 }
 
 .nav-section-title {
@@ -332,18 +424,20 @@ body.sidebar-collapsed .sidebar-collapse-trigger:hover {
 
 /* Topbar Component */
 .soc-main-wrapper {
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .soc-topbar {
     height: 64px;
     min-height: 64px;
+    flex-shrink: 0;
     background-color: var(--topbar-bg);
     border-bottom: 1px solid var(--border-color);
     padding: 0;
@@ -464,16 +558,31 @@ body.sidebar-collapsed .sidebar-collapse-trigger:hover {
     margin-inline: auto;
 }
 
-.soc-content, .public-content {
+.soc-content {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-block: 2rem;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+}
+
+.public-content {
     width: 100%;
     padding-block: 2rem;
 }
 
 .public-wrapper {
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
 }
 
 .public-navbar {
@@ -504,6 +613,9 @@ body.sidebar-collapsed .sidebar-collapse-trigger:hover {
     padding: 16px 24px;
     box-shadow: var(--shadow-soft);
     overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: auto;
 }
 
 .pipeline-step {
@@ -1050,6 +1162,9 @@ body.sidebar-collapsed .sidebar-collapse-trigger:hover {
     font-size: 0.88rem;
     max-height: 420px;
     overflow-y: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
 }
@@ -1494,6 +1609,9 @@ body.soc-body::before {
 /* Tables & Queues */
 .table-responsive {
     overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
     border-radius: var(--border-radius-btn);
     border: 1px solid var(--border-color);
 }
@@ -4109,9 +4227,12 @@ h3, .card-title-lg {
         top: 0 !important;
         left: 0 !important;
         bottom: 0 !important;
+        height: 100vh !important;
         z-index: 1050 !important;
         width: 280px !important;
         max-width: 85vw !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
         transform: translateX(-100%) !important;
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
         box-shadow: 0 0 35px rgba(0, 0, 0, 0.6) !important;
@@ -4125,6 +4246,7 @@ h3, .card-title-lg {
         margin-left: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
+        height: 100vh !important;
     }
 
     .soc-topbar {
