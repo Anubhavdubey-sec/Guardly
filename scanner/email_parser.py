@@ -4,6 +4,7 @@ from email.utils import parseaddr
 import re
 
 from scanner.pdf_scanner import extract_pdf_intel
+from scanner.qr_ocr_scanner import scan_attachment_for_quishing
 from scanner.timeline import build_delivery_timeline
 
 URL_REGEX = re.compile(r"https?://[^\s<>\"']+|www\.[^\s<>\"']+")
@@ -52,6 +53,14 @@ def parse_email(file_path):
                     for pu in pdf_intel["urls"]:
                         if pu not in pdf_urls:
                             pdf_urls.append(pu)
+
+                # Scan inline images & image attachments for Quishing QR Codes
+                quishing_res = scan_attachment_for_quishing(payload, filename, content_type)
+                if quishing_res["has_qr_code"]:
+                    att_info["quishing_scan"] = quishing_res
+                    for q_url in quishing_res["qr_urls"]:
+                        if q_url not in pdf_urls:
+                            pdf_urls.append(q_url)
 
                 attachments.append(att_info)
             elif content_type == "text/plain":

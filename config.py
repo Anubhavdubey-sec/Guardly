@@ -22,10 +22,15 @@ class Config:
     WTF_CSRF_ENABLED = os.getenv("WTF_CSRF_ENABLED", "True").lower() in ("true", "1", "t")
     RATELIMIT_ENABLED = os.getenv("RATELIMIT_ENABLED", "True").lower() in ("true", "1", "t")
 
-    # Secure Cookie Settings
+    # Secure Cookie & Session Settings
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", str(not (_debug or _testing))).lower() in ("true", "1", "t")
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    PERMANENT_SESSION_LIFETIME = 7200  # 2 Hours lifetime in seconds
+    SESSION_REFRESH_EACH_REQUEST = True
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # Database Configuration
     _db_url = os.getenv("DATABASE_URL")

@@ -247,5 +247,15 @@ class SecurityHardeningTests(unittest.TestCase):
             self.assertEqual(check_user.role, User.ROLE_ADMIN)
 
 
+    def test_security_response_headers(self):
+        client = self.app.test_client()
+        res = client.get("/upload")
+        self.assertEqual(res.headers.get("X-Frame-Options"), "DENY")
+        self.assertEqual(res.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(res.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+        self.assertIn("Permissions-Policy", res.headers)
+        self.assertIn("Content-Security-Policy", res.headers)
+
+
 if __name__ == "__main__":
     unittest.main()

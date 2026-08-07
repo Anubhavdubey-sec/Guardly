@@ -57,6 +57,11 @@
                     <i class="bi bi-layers-half"></i> <span>Investigation History</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'graph.view_threat_graph' %}active{% endif %}" href="{{ url_for('graph.view_threat_graph') }}">
+                    <i class="bi bi-diagram-3-fill"></i> <span>Threat Graph</span>
+                </a>
+            </li>
         </ul>
 
         {% if current_user and current_user.role == 'admin' %}

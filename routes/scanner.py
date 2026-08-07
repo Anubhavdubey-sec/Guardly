@@ -27,6 +27,7 @@ from models.user import User, db
 from routes.auth import login_required, roles_required
 from scanner.email_parser import parse_email
 from scanner.phishing_detector import analyze_email
+from services.yara_generator import generate_sigma_rule, generate_yara_rule
 from scanner.url_heuristics import (
     HIGH_RISK_TLDS,
     KNOWN_IMPERSONATED_BRANDS,
@@ -125,7 +126,15 @@ def _scan_analysis(scan, email_data):
 
 
 def _scan_scope_query():
-    return EmailScan.query
+    user = getattr(g, "current_user", None)
+    if user:
+        return EmailScan.query.filter(
+            or_(
+                EmailScan.user_id == user.id,
+                EmailScan.user_id.is_(None),
+            )
+        )
+    return EmailScan.query.filter(EmailScan.user_id.is_(None))
 
 
 def _accessible_scan_or_404(scan_id):
@@ -196,9 +205,11 @@ def upload():
     if not original_name or not is_allowed_email(original_name):
         return render_template("upload.html", error="Only .eml email files are accepted."), 400
 
-    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    upload_dir = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
     unique_name = f"{uuid.uuid4().hex}_{original_name}"
-    file_path = os.path.join(upload_dir, unique_name)
+    file_path = os.path.abspath(os.path.join(upload_dir, unique_name))
+    if not file_path.startswith(upload_dir):
+        return render_template("upload.html", error="Invalid file upload path."), 400
 
     try:
         uploaded_file.save(file_path)
@@ -344,16 +355,28 @@ def export_scan_json(scan_id):
 @scanner_bp.route("/scans/<int:scan_id>/report.pdf")
 @login_required
 @roles_required(User.ROLE_ADMIN)
-def download_pdf_report(scan_id):
+def download_admin_pdf_report(scan_id):
+    from services.pdf_report_generator import generate_pdf_scan_report
     scan = _accessible_scan_or_404(scan_id)
-    email_data = _scan_email_data(scan)
-    analysis = _scan_analysis(scan, email_data)
-    report = build_scan_report(scan, email_data, analysis)
-    return send_file(
-        report,
+    payload = _report_payload(scan)
+    pdf_bytes = generate_pdf_scan_report(payload["email"], payload["analysis"], scan.id)
+    return Response(
+        pdf_bytes,
         mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"guardly-scan-{scan.id}.pdf",
+        headers={"Content-Disposition": f"attachment; filename=guardly_report_scan_{scan.id}.pdf"}
+    )
+
+
+@scanner_bp.route("/scan/<int:scan_id>/pdf")
+def download_pdf_report(scan_id):
+    from services.pdf_report_generator import generate_pdf_scan_report
+    scan = _scan_scope_query().filter(EmailScan.id == scan_id).first_or_404()
+    payload = _report_payload(scan)
+    pdf_bytes = generate_pdf_scan_report(payload["email"], payload["analysis"], scan.id)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=guardly_report_scan_{scan.id}.pdf"}
     )
 
 
@@ -552,7 +575,7 @@ def scan_ioc():
 
     # Query related scans in database
     pattern = f"%{query}%"
-    matching_scans = EmailScan.query.filter(
+    matching_scans = _scan_scope_query().filter(
         or_(
             EmailScan.urls.ilike(pattern),
             EmailScan.iocs.ilike(pattern),
@@ -602,4 +625,28 @@ def geolocation_health():
     from services.geolocation import get_geolocation_service
     geo_svc = get_geolocation_service(current_app.config)
     return jsonify(geo_svc.health_check())
+
+
+@scanner_bp.route("/scan/<int:scan_id>/yara")
+def download_yara_rule(scan_id):
+    scan = _scan_scope_query().filter(EmailScan.id == scan_id).first_or_404()
+    payload = _report_payload(scan)
+    yara_code = generate_yara_rule(payload["email"], payload["analysis"])
+    return Response(
+        yara_code,
+        mimetype="text/plain",
+        headers={"Content-Disposition": f"attachment; filename=guardly_rule_scan_{scan.id}.yar"}
+    )
+
+
+@scanner_bp.route("/scan/<int:scan_id>/sigma")
+def download_sigma_rule(scan_id):
+    scan = _scan_scope_query().filter(EmailScan.id == scan_id).first_or_404()
+    payload = _report_payload(scan)
+    sigma_code = generate_sigma_rule(payload["email"], payload["analysis"])
+    return Response(
+        sigma_code,
+        mimetype="text/yaml",
+        headers={"Content-Disposition": f"attachment; filename=guardly_sigma_scan_{scan.id}.yml"}
+    )
 

@@ -1,12 +1,13 @@
 from functools import wraps
 
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from models.scan import EmailScan
 from models.user import User, db
 from services.audit import record_event
 from services.limiter import limiter
+from services.password_validator import validate_password
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -106,8 +107,8 @@ def register():
 @roles_required(User.ROLE_ADMIN, User.ROLE_ANALYST)
 def dashboard():
     user = g.current_user
-    scans = EmailScan.query.order_by(EmailScan.scan_time.desc()).all()
-    scan_scope = "all reports"
+    scans = EmailScan.query.filter_by(user_id=user.id).order_by(EmailScan.scan_time.desc()).all()
+    scan_scope = "my reports"
 
     total_scans = len(scans)
     stats = {
@@ -124,6 +125,53 @@ def dashboard():
     )
 
 
+@auth_bp.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    user = g.current_user
+    if request.method == "POST":
+        old_password = request.form.get("old_password", "")
+        new_password = request.form.get("new_password", "")
+
+        if not check_password_hash(user.password, old_password):
+            flash("Current password is incorrect.", "danger")
+            return render_template("change_password.html")
+
+        is_valid, errors, strength = validate_password(new_password, username=user.username, email=user.email)
+        if not is_valid:
+            for err in errors:
+                flash(err, "danger")
+            return render_template("change_password.html")
+
+        user.password = generate_password_hash(new_password)
+        record_event("password_changed", target_type="user", target_id=user.id, detail="User changed password.", actor=user)
+        try:
+            db.session.commit()
+            flash("Password updated successfully.", "success")
+            return redirect(url_for("auth.dashboard"))
+        except Exception as e:
+            db.session.rollback()
+            flash("Failed to update password.", "danger")
+
+    return render_template("change_password.html")
+
+
+@auth_bp.route("/api/v1/password/validate", methods=["POST"])
+def validate_password_api():
+    """Live password validation API endpoint for real-time frontend feedback & strength meter."""
+    data = request.get_json(silent=True) or request.form
+    password = data.get("password", "")
+    username = data.get("username", "")
+    email = data.get("email", "")
+
+    is_valid, errors, strength = validate_password(password, username=username, email=email)
+    return {
+        "valid": is_valid,
+        "errors": errors,
+        "strength": strength,
+    }
+
+
 @auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
@@ -134,5 +182,5 @@ def logout():
     except Exception:
         db.session.rollback()
     session.clear()
-    flash("You have been logged out.", "success")
+    flash("You have been signed out.", "success")
     return redirect(url_for("auth.login"))

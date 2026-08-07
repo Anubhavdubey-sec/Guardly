@@ -29,10 +29,10 @@
         </div>
     </div>
     <div class="case-actions">
+        <a class="btn btn-outline-info btn-sm" href="{{ url_for('scanner.download_pdf_report', scan_id=scan.id) }}"><i class="bi bi-file-earmark-pdf me-1"></i> Export PDF</a>
         <button class="btn btn-outline-light btn-sm" type="button" data-copy-page-link><i class="bi bi-link-45deg"></i> Share</button>
         {% if current_user and current_user.role == 'admin' %}
-            <a class="btn btn-outline-light btn-sm" href="{{ url_for('scanner.export_scan_json', scan_id=scan.id) }}"><i class="bi bi-braces"></i> Export</a>
-            <a class="btn btn-primary btn-sm" href="{{ url_for('scanner.download_pdf_report', scan_id=scan.id) }}"><i class="bi bi-file-earmark-arrow-down"></i> Download</a>
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('scanner.export_scan_json', scan_id=scan.id) }}"><i class="bi bi-braces"></i> Export JSON</a>
         {% endif %}
     </div>
 </div>
@@ -307,6 +307,34 @@
     <div class="report-workspace">
         <div class="report-main-column">
             <section class="investigation-card">
+            <section class="investigation-card">
+                <div class="investigation-card-header"><div><div class="section-overline">DFIR Forensics</div><h2>Header Forensic Analysis</h2><p>{{ analysis.header_analysis.technical_summary if analysis.header_analysis else 'Standard header analysis completed.' }}</p></div><span class="badge {{ 'bg-success' if analysis.header_analysis and analysis.header_analysis.header_security_score >= 75 else 'bg-warning text-dark' if analysis.header_analysis and analysis.header_analysis.header_security_score >= 40 else 'bg-danger' }} font-mono px-3 py-2 fs-6">Header Score: {{ analysis.header_analysis.header_security_score if analysis.header_analysis else 100 }}/100</span></div>
+                
+                {% if analysis.header_analysis and analysis.header_analysis.findings %}
+                <div class="dfir-findings-list mb-3">
+                    <h6 class="text-uppercase text-muted font-mono small mb-2"><i class="bi bi-shield-exclamation me-1"></i> Forensic Header Anomalies &amp; Findings ({{ analysis.header_analysis.findings|length }})</h6>
+                    <div class="accordion" id="dfirFindingsAccordion">
+                        {% for finding in analysis.header_analysis.findings %}
+                        <div class="accordion-item bg-dark border-secondary mb-2 rounded overflow-hidden">
+                            <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                <button class="accordion-button collapsed bg-dark text-light small py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+                                    <span class="badge {{ 'bg-danger' if finding.severity in ['Critical', 'High'] else 'bg-warning text-dark' if finding.severity == 'Medium' else 'bg-info text-dark' }} me-2">{{ finding.severity }}</span>
+                                    <strong class="me-2">{{ finding.finding }}</strong>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#dfirFindingsAccordion">
+                                <div class="accordion-body text-light small">
+                                    <p class="mb-1"><strong>Explanation:</strong> {{ finding.explanation }}</p>
+                                    {% if finding.evidence %}<div class="bg-black p-2 rounded font-mono text-muted mb-2 small"><pre class="m-0 text-info">{{ finding.evidence }}</pre></div>{% endif %}
+                                    <p class="mb-0 text-success"><i class="bi bi-lightbulb me-1"></i> <strong>Recommendation:</strong> {{ finding.recommendation }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="investigation-card-header"><div><div class="section-overline">Message metadata</div><h2>Email headers</h2></div><span class="count-badge">{{ email_data.headers|length }} fields</span></div>
                 <div class="header-table">
                     {% for name, value in header_items %}<div><dt>{{ name }}</dt><dd class="font-mono">{{ value|string }}</dd></div>{% else %}<div><dt>Headers</dt><dd>Not available</dd></div>{% endfor %}
@@ -316,13 +344,80 @@
                 <div class="investigation-card-header"><div><div class="section-overline">Decoded content</div><h2>Extracted text</h2></div></div>
                 <pre class="email-body">{{ email_data.body or 'No plaintext content was extracted from this message.' }}</pre>
             </section>
+
+            <!-- Automated SOC Incident Response Playbook & YARA/SIEM Rules -->
+            {% if analysis.soc_playbook %}
+            <section class="investigation-card">
+                <div class="investigation-card-header"><div><div class="section-overline">Automated SOC Response</div><h2>Incident Playbooks &amp; SIEM Rule Generation</h2><p>Triggered incident response workflows and SIEM / YARA detection rule compilation.</p></div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('scanner.download_yara_rule', scan_id=scan.id) }}" class="btn btn-outline-info btn-sm font-mono"><i class="bi bi-file-code me-1"></i> Download YARA (.yar)</a>
+                    <a href="{{ url_for('scanner.download_sigma_rule', scan_id=scan.id) }}" class="btn btn-outline-warning btn-sm font-mono"><i class="bi bi-filetype-yml me-1"></i> Download SIEM Sigma (.yml)</a>
+                </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    {% for pb in analysis.soc_playbook.active_playbooks %}
+                    <div class="col-md-6">
+                        <div class="border border-secondary border-opacity-25 rounded p-3 bg-dark h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge bg-primary font-mono">{{ pb.playbook_id }}</span>
+                                <span class="badge {{ 'bg-danger' if pb.severity == 'CRITICAL' else 'bg-warning text-dark' if pb.severity == 'HIGH' else 'bg-info text-dark' }}">{{ pb.severity }}</span>
+                            </div>
+                            <h6 class="text-white fw-bold small mb-1">{{ pb.name }}</h6>
+                            <p class="text-muted small mb-2">{{ pb.summary }}</p>
+                            <ul class="text-light font-mono small ps-3 mb-0">
+                                {% for step in pb.steps %}
+                                <li>{{ step }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if analysis.yara_rule %}
+                <div class="yara-rule-preview">
+                    <h6 class="text-uppercase text-muted font-mono small mb-2"><i class="bi bi-code-slash me-1"></i> Compiled Enterprise YARA Detection Rule</h6>
+                    <div class="bg-black p-3 rounded font-mono border border-secondary border-opacity-25 overflow-auto" style="max-height: 200px;">
+                        <pre class="m-0 text-info small">{{ analysis.yara_rule }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
         </div>
         <aside class="report-context-panel">
             <section class="context-card">
                 <div class="section-overline">Authentication</div><h2>Sender controls</h2>
                 <div class="auth-check-list"><div><span>SPF</span><b class="auth-{{ 'pass' if analysis.auth_results.spf == 'pass' else 'neutral' if analysis.auth_results.spf == 'not available' else 'fail' }}">{{ analysis.auth_results.spf }}</b></div><div><span>DKIM</span><b class="auth-{{ 'pass' if analysis.auth_results.dkim == 'pass' else 'neutral' if analysis.auth_results.dkim == 'not available' else 'fail' }}">{{ analysis.auth_results.dkim }}</b></div><div><span>DMARC</span><b class="auth-{{ 'pass' if analysis.auth_results.dmarc == 'pass' else 'neutral' if analysis.auth_results.dmarc == 'not available' else 'fail' }}">{{ analysis.auth_results.dmarc }}</b></div></div>
             </section>
-            <section class="context-card"><div class="section-overline">Identity alignment</div><dl class="context-list"><div><dt>From domain</dt><dd class="font-mono">{{ sender_domain or '—' }}</dd></div><div><dt>Reply-to domain</dt><dd class="font-mono">{{ reply_domain or '—' }}</dd></div><div><dt>Recipient</dt><dd class="font-mono">{{ email_data.to or '—' }}</dd></div></dl></section>
+            <section class="context-card"><div class="section-overline">Identity alignment</div><dl class="context-list"><div><dt>From domain</dt><dd class="font-mono">{{ sender_domain or '—' }}</dd></div><div><dt>Reply-to domain</dt><dd class="font-mono">{{ reply_domain or '—' }}</dd></div><div><dt>Recipient</dt><dd class="font-mono">{{ email_data.to or '—' }}</dd></div><div><dt>Mail Client</dt><dd class="font-mono">{{ analysis.header_analysis.mail_client.client_name if analysis.header_analysis else 'Unknown' }}</dd></div></dl></section>
+
+            <!-- NLP AI Social Engineering & Psychological Manipulation Card -->
+            {% if analysis.nlp_analysis %}
+            <section class="context-card border-primary border-opacity-50">
+                <div class="section-overline text-info"><i class="bi bi-robot me-1"></i> AI NLP Intelligence</div>
+                <h2 class="fs-6 fw-bold text-white mb-2">Social Engineering Score</h2>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="fs-4 fw-bold font-mono {{ 'text-danger' if analysis.nlp_analysis.social_engineering_score >= 60 else 'text-warning' if analysis.nlp_analysis.social_engineering_score >= 30 else 'text-success' }}">
+                        {{ analysis.nlp_analysis.social_engineering_score }} / 100
+                    </span>
+                    <span class="badge {{ 'bg-danger' if analysis.nlp_analysis.threat_level == 'Critical' else 'bg-warning text-dark' if analysis.nlp_analysis.threat_level == 'High' else 'bg-info text-dark' if analysis.nlp_analysis.threat_level == 'Medium' else 'bg-success' }} font-mono">
+                        {{ analysis.nlp_analysis.threat_level }} Risk
+                    </span>
+                </div>
+                {% if analysis.nlp_analysis.tactics %}
+                <div class="mb-2">
+                    <span class="text-muted d-block small font-mono mb-1">DETECTED NLP VECTORS:</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for t in analysis.nlp_analysis.tactics %}
+                            <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50 small font-mono">{{ t }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
         </aside>
     </div>
 </section>

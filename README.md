@@ -37,7 +37,28 @@ Guardly implements production-grade security controls following OWASP Web Securi
 - **Inter-Hop Delay Analysis**: Computes delay intervals between consecutive relay hops, flagging timestamp anomalies, out-of-order headers, and clock skew.
 - **Native IP & Relay Classification**: Uses Python's native `ipaddress` module to classify relay IPs as Public, Private, Loopback, Link-Local, Reserved, or IPv6.
 - **Risk Observations**: Identifies private IP relays, duplicate relays, IPv6 usage, and missing timestamp fields as neutral DFIR observations.
-- **Offline Architecture & Limitations**: Operates 100% locally with zero external API calls. Geographic context utilizes local IP lookups (`services/public_lookup.py`), displaying `"Location Unavailable"` when unresolvable locally. Missing or malformed headers default gracefully to `"Unknown"` without raising UI exceptions.
+### 7. Strict Enterprise Password Policy & Live Strength Estimation
+- **Length Boundaries**: Exactly **8 to 12 characters** (enforced on both client and server).
+- **Required Composition**: Must contain at least 1 uppercase letter (`A–Z`), 1 lowercase letter (`a–z`), 1 number (`0–9`), and 1 special character (`!@#$%^&*()_+-={}[]:;"'<>,.?/\$~`).
+- **Forbidden Inputs**: Rejects spaces, common guessable passwords (`password123`, `admin123`, `qwerty123`), and passwords identical to the username or email.
+- **Password Storage**: Uses Werkzeug's `generate_password_hash()` and `check_password_hash()`. Plaintext passwords are never logged or stored.
+- **Live Frontend Widget**: Real-time strength meter (Weak, Medium, Strong, Excellent) driven by character set pool size, Shannon entropy, and common password detection (`static/js/password_strength.js`).
+
+#### Password Examples:
+- **Valid Passwords**:
+  - `P@ssw0rd12` — *Valid (10 chars, Uppercase, Lowercase, Number, Special)* $\rightarrow$ **Excellent**
+  - `A1#b2C3$d4` — *Valid (10 chars, High Entropy)* $\rightarrow$ **Excellent**
+  - `P@ssw0r1` — *Valid (8 char boundary)* $\rightarrow$ **Strong**
+  - `P@ssw0rd123!` — *Valid (12 char boundary)* $\rightarrow$ **Excellent**
+- **Invalid Passwords**:
+  - `P@1a` — *Rejected: Too short (<8 characters)*
+  - `P@ssword123456` — *Rejected: Too long (>12 characters)*
+  - `p@ssword123` — *Rejected: Missing uppercase letter*
+  - `P@SSWORD123` — *Rejected: Missing lowercase letter*
+  - `P@ssword!@#` — *Rejected: Missing number*
+  - `Password123` — *Rejected: Missing special character & common password*
+  - `P@ss word12` — *Rejected: Contains spaces*
+  - `admin` — *Rejected: Identical to username*
 
 ---
 
