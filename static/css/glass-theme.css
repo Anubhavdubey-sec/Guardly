@@ -25,8 +25,8 @@
     --glass-border-light: rgba(255, 255, 255, 0.6);
     --glass-highlight-light: rgba(255, 255, 255, 0.85);
 
-    --glass-blur: blur(24px) saturate(180%);
-    --glass-blur-strong: blur(36px) saturate(190%);
+    --glass-blur: blur(12px) saturate(140%);
+    --glass-blur-strong: blur(16px) saturate(150%);
     --glass-radius-lg: 22px;
     --glass-radius-md: 16px;
     --glass-radius-sm: 12px;
@@ -52,6 +52,7 @@ body.soc-body {
     position: relative;
     background: #05070d !important;
     isolation: isolate;
+    transform: translateZ(0);
 }
 
 body.soc-body::before,
@@ -62,26 +63,28 @@ body.soc-body::after {
     z-index: -2;
     pointer-events: none;
     background-image:
-        radial-gradient(38vw 38vw at 12% 8%, color-mix(in srgb, var(--glass-hue-a) 55%, transparent) 0%, transparent 60%),
-        radial-gradient(42vw 42vw at 88% 18%, color-mix(in srgb, var(--glass-hue-d) 48%, transparent) 0%, transparent 62%),
-        radial-gradient(46vw 46vw at 20% 92%, color-mix(in srgb, var(--glass-hue-c) 40%, transparent) 0%, transparent 60%),
-        radial-gradient(40vw 40vw at 82% 88%, color-mix(in srgb, var(--glass-hue-b) 46%, transparent) 0%, transparent 60%);
-    filter: blur(60px) saturate(150%);
-    opacity: 0.55;
-    animation: glassAuroraDrift 34s ease-in-out infinite alternate;
+        radial-gradient(38vw 38vw at 12% 8%, color-mix(in srgb, var(--glass-hue-a) 45%, transparent) 0%, transparent 60%),
+        radial-gradient(42vw 42vw at 88% 18%, color-mix(in srgb, var(--glass-hue-d) 40%, transparent) 0%, transparent 62%),
+        radial-gradient(46vw 46vw at 20% 92%, color-mix(in srgb, var(--glass-hue-c) 35%, transparent) 0%, transparent 60%),
+        radial-gradient(40vw 40vw at 82% 88%, color-mix(in srgb, var(--glass-hue-b) 40%, transparent) 0%, transparent 60%);
+    filter: blur(40px);
+    opacity: 0.45;
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    animation: glassAuroraDrift 40s ease-in-out infinite alternate;
 }
 
 body.soc-body::after {
-    animation-duration: 46s;
+    animation-duration: 52s;
     animation-direction: alternate-reverse;
-    opacity: 0.35;
-    mix-blend-mode: screen;
+    opacity: 0.25;
 }
 
 @keyframes glassAuroraDrift {
-    0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-    50%  { transform: translate3d(2vw, -3vh, 0) rotate(6deg) scale(1.06); }
-    100% { transform: translate3d(-3vw, 2vh, 0) rotate(-4deg) scale(1.02); }
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(1.5vw, -2vh, 0) scale(1.03); }
+    100% { transform: translate3d(-2vw, 1.5vh, 0) scale(1.01); }
 }
 
 body.light-mode.soc-body,
@@ -101,6 +104,8 @@ body[data-bs-theme="light"].soc-body {
     margin: 12px 0 12px 12px;
     border-radius: var(--glass-radius-lg);
     height: calc(100vh - 24px);
+    transform: translateZ(0);
+    backface-visibility: hidden;
     transition: width 220ms ease, min-width 220ms ease, max-width 220ms ease !important;
 }
 
@@ -191,7 +196,9 @@ body.sidebar-collapsed .sidebar-footer .text-truncate {
     border: 1.5px solid rgba(239, 68, 68, 0.55) !important;
     border-radius: var(--glass-radius-md) !important;
     box-shadow: var(--glass-shadow-dark), 0 0 14px rgba(239, 68, 68, 0.18) !important;
-    transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
 }
 
 .card:hover,

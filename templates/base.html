@@ -239,16 +239,22 @@
                 }
             });
 
-            // Smooth animated logo splash dismiss on page open without text ghosting
+            // Smooth animated logo splash dismiss once per session (prevents navigation jitter in Chrome)
             const splash = document.getElementById('guardlySplash') || document.getElementById('phishguardSplash');
             if (splash) {
-                setTimeout(() => {
-                    splash.classList.add('fade-out');
+                if (sessionStorage.getItem('guardly_splash_shown')) {
+                    splash.style.display = 'none';
+                    splash.remove();
+                } else {
+                    sessionStorage.setItem('guardly_splash_shown', 'true');
                     setTimeout(() => {
-                        splash.style.display = 'none';
-                        splash.remove();
-                    }, 350);
-                }, 400);
+                        splash.classList.add('fade-out');
+                        setTimeout(() => {
+                            splash.style.display = 'none';
+                            splash.remove();
+                        }, 250);
+                    }, 300);
+                }
             }
         });
     </script>
