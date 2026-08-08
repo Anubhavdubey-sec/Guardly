@@ -408,6 +408,17 @@ def run_mail_relay_cmd():
         worker.stop()
 
 
+@app.cli.command("scan-gmail-inbox")
+@click.option("--email", default="user@company.com", help="Google Workspace email inbox to scan.")
+@click.option("--max-results", type=int, default=10, help="Maximum messages to scan.")
+def scan_gmail_inbox_cmd(email, max_results):
+    """Scan Google Workspace Gmail inbox post-delivery for phishing threats."""
+    from services.gmail_scanner import process_gmail_inbox_scans
+    click.echo(f"Starting Guardly Post-Delivery Scan for {email}...")
+    res = process_gmail_inbox_scans(app, [email], max_results=max_results)
+    click.echo(f"Post-Delivery Scan Complete! Total Scanned: {res['total_scanned']}, Remediated (Trashed): {res['total_remediated']}")
+
+
 if __name__ == "__main__":
     app.run(debug=app.config["DEBUG"])
 

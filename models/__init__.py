@@ -6,10 +6,11 @@ from models.queue import MailQueue
 from models.email_message import EmailMessage, EmailAttachment
 from models.policy import MailDecision, MailQuarantine, MailAuditLog
 from models.relay import MailRelayLog
+from models.gmail_scan import GmailPostDeliveryScan
 
 __all__ = [
     "db", "User", "EmailScan", "SystemLog", "ThreatIntelligence",
     "IOCReputation", "IOCCache", "MailQueue", "EmailMessage", "EmailAttachment",
-    "MailDecision", "MailQuarantine", "MailAuditLog", "MailRelayLog"
+    "MailDecision", "MailQuarantine", "MailAuditLog", "MailRelayLog", "GmailPostDeliveryScan"
 ]
 
