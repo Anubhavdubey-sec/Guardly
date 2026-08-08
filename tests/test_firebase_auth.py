@@ -188,6 +188,59 @@ class FirebaseAuthUnitAndIntegrationTests(unittest.TestCase):
         self.assertEqual(new_user.tenant_id, "default")
         self.assertEqual(new_user.role, User.ROLE_USER)
 
+    def test_schema_migration_upgrades_legacy_users_table(self):
+        """
+        Tests that apply_schema_migrations() safely upgrades a pre-Firebase 'users' table
+        by adding all 6 new columns without data loss.
+        """
+        from sqlalchemy import create_engine, inspect, text
+        from unittest.mock import patch
+        from models.migrations import apply_schema_migrations
+
+        # 1. Create in-memory engine and legacy 'users' table with pre-Firebase columns only
+        test_engine = create_engine("sqlite:///:memory:")
+        with test_engine.connect() as conn:
+            conn.execute(text("""
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username VARCHAR(80) NOT NULL,
+                    email VARCHAR(120) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    role VARCHAR(20) DEFAULT 'user' NOT NULL,
+                    created_at DATETIME
+                )
+            """))
+            conn.execute(text("""
+                INSERT INTO users (username, email, password, role)
+                VALUES ('legacy_user', 'legacy@company.com', 'hash_123', 'analyst')
+            """))
+            conn.commit()
+
+        # 2. Execute apply_schema_migrations() against test_engine
+        apply_schema_migrations(engine=test_engine)
+
+        # 3. Assert all 6 new columns exist in the users table
+        inspector = inspect(test_engine)
+        col_names = {col["name"] for col in inspector.get_columns("users")}
+
+        expected_new_cols = {
+            "phone_number",
+            "tenant_id",
+            "auth_provider",
+            "firebase_uid",
+            "is_active",
+            "updated_at",
+        }
+        for col_name in expected_new_cols:
+            self.assertIn(col_name, col_names, f"Missing migrated column '{col_name}' in users table.")
+
+        # 4. Verify existing legacy data is preserved intact
+        with test_engine.connect() as conn:
+            result = conn.execute(text("SELECT username, email, role FROM users WHERE email = 'legacy@company.com'")).first()
+            self.assertIsNotNone(result)
+            self.assertEqual(result[0], "legacy_user")
+            self.assertEqual(result[2], "analyst")
+
 
 if __name__ == "__main__":
     unittest.main()

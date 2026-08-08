@@ -122,6 +122,22 @@
     </div>
 </div>
 
+<!-- Firebase Web SDK Compat Libraries -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script>
+    const firebaseConfig = {{ firebase_config | tojson }};
+    if (firebaseConfig && firebaseConfig.apiKey) {
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+        } catch (e) {
+            console.warn("Firebase SDK initialization notice:", e);
+        }
+    }
+</script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const csrfToken = "{{ csrf_token() }}";
