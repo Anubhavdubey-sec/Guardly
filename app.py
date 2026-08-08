@@ -336,5 +336,36 @@ def reset_admin_password(email):
     click.echo(f"Password updated for administrator {user.email}.")
 
 
+@app.cli.command("run-smtp")
+@click.option("--host", default=None, help="Host interface to bind the SMTP receiver.")
+@click.option("--port", type=int, default=None, help="Port to listen on.")
+def run_smtp_cmd(host, port):
+    """Start the Guardly SMTP Receiver foundation in standalone mode."""
+    from services.smtp_receiver import GuardlySMTPServer
+    smtp_host = host or app.config.get("SMTP_HOST", "127.0.0.1")
+    smtp_port = port or app.config.get("SMTP_PORT", 2525)
+    storage_path = app.config.get("MAIL_STORAGE_PATH")
+    max_size = app.config.get("MAX_MESSAGE_SIZE", 10 * 1024 * 1024)
+
+    server = GuardlySMTPServer(
+        host=smtp_host,
+        port=smtp_port,
+        max_message_size=max_size,
+        storage_path=storage_path,
+    )
+    click.echo(f"Starting Guardly SMTP Receiver on {smtp_host}:{smtp_port}...")
+    server.start()
+    click.echo("SMTP Receiver active. Press Ctrl+C to stop.")
+    try:
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        click.echo("\nStopping SMTP Receiver...")
+        server.stop()
+        click.echo("SMTP Receiver stopped.")
+
+
 if __name__ == "__main__":
     app.run(debug=app.config["DEBUG"])
+

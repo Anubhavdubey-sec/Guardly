@@ -73,5 +73,11 @@ class Config:
     GEOLOCATION_FALLBACK_API_KEY = os.getenv("GEOLOCATION_FALLBACK_API_KEY", "")
     GEOLOCATION_FALLBACK_TIMEOUT = float(os.getenv("GEOLOCATION_FALLBACK_TIMEOUT", "2.0"))
 
+    # SMTP Receiver Configuration
+    SMTP_HOST = os.getenv("SMTP_HOST", "127.0.0.1")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "2525"))
+    MAIL_STORAGE_PATH = os.getenv("MAIL_STORAGE_PATH", os.path.join(BASE_DIR, "received_emails"))
+    MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", str(10 * 1024 * 1024)))
+
     # Debug Configuration
     DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
