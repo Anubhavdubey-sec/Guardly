@@ -392,6 +392,22 @@ def run_mail_worker_cmd():
         worker.stop()
 
 
+@app.cli.command("run-mail-relay")
+def run_mail_relay_cmd():
+    """Start standalone Guardly Outbound Mail Relay Worker."""
+    from services.mail_relay import MailRelayWorkerThread
+    worker = MailRelayWorkerThread(app)
+    worker.start()
+    click.echo("Guardly Outbound Mail Relay Worker active. Press Ctrl+C to stop.")
+    try:
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        click.echo("\nStopping Mail Relay Worker...")
+        worker.stop()
+
+
 if __name__ == "__main__":
     app.run(debug=app.config["DEBUG"])
 

@@ -5,10 +5,11 @@ from models.threat_intel import ThreatIntelligence, IOCReputation, IOCCache
 from models.queue import MailQueue
 from models.email_message import EmailMessage, EmailAttachment
 from models.policy import MailDecision, MailQuarantine, MailAuditLog
+from models.relay import MailRelayLog
 
 __all__ = [
     "db", "User", "EmailScan", "SystemLog", "ThreatIntelligence",
     "IOCReputation", "IOCCache", "MailQueue", "EmailMessage", "EmailAttachment",
-    "MailDecision", "MailQuarantine", "MailAuditLog"
+    "MailDecision", "MailQuarantine", "MailAuditLog", "MailRelayLog"
 ]
 
