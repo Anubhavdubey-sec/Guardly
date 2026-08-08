@@ -16,18 +16,6 @@ def apply_schema_migrations(engine=None):
                     conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
                 if "created_at" not in user_cols:
                     conn.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))
-                if "phone_number" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(32)"))
-                if "tenant_id" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'default'"))
-                if "auth_provider" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(32) DEFAULT 'password'"))
-                if "firebase_uid" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(128)"))
-                if "is_active" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1"))
-                if "updated_at" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN updated_at DATETIME"))
                 conn.commit()
 
         if inspector.has_table("email_scans"):

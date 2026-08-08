@@ -24,7 +24,6 @@
 - **Werkzeug Hash Algorithm**: Passwords stored exclusively as salted cryptographic hashes (`generate_password_hash` / `check_password_hash`). Plaintext passwords are never stored or logged.
 - **Session Fixation Prevention**: `session.clear()` executes prior to populating authenticated session variables upon login (`routes/auth.py`).
 - **Role-Based Access Control (RBAC)**: `@login_required` and `@roles_required(User.ROLE_ADMIN, User.ROLE_ANALYST)` enforce strict authorization boundaries across admin endpoints, user management, and report downloads.
-- **Resolved Finding (CWE-269 / OWASP A01:2021)**: **Default Privileged Role Escalation via Firebase Sign-In**. Fixed in `services/firebase_auth.py` by ensuring brand-new Firebase (Google/Phone) users receive `role=User.ROLE_USER` by default instead of `ROLE_ANALYST`. Staff dashboard access requires explicit administrator promotion via Guardly RBAC user management.
 - **Strict Password Policy**: Enforces 8–12 character length limits, mandatory uppercase, lowercase, numeric, and special character requirements (`services/password_validator.py`). Rejects spaces, common guessable passwords, and passwords matching username/email.
 
 ### 2. Session Security
