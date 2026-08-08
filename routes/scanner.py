@@ -151,7 +151,8 @@ def _history_filters():
     query = _scan_scope_query()
 
     if search:
-        pattern = f"%{search}%"
+        safe_search = search.replace("\\", r"\\").replace("%", r"\%").replace("_", r"\_")
+        pattern = f"%{safe_search}%"
         conditions = [
             EmailScan.subject.ilike(pattern),
             EmailScan.sender.ilike(pattern),
@@ -201,9 +202,13 @@ def upload():
     if not uploaded_file or not uploaded_file.filename:
         return render_template("upload.html", error="Choose an .eml file to scan."), 400
 
-    original_name = secure_filename(uploaded_file.filename)
-    if not original_name or not is_allowed_email(original_name):
+    raw_filename = uploaded_file.filename
+    if not is_allowed_email(raw_filename):
         return render_template("upload.html", error="Only .eml email files are accepted."), 400
+
+    original_name = secure_filename(raw_filename)
+    if not original_name or not is_allowed_email(original_name):
+        original_name = "uploaded_email.eml"
 
     upload_dir = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
     unique_name = f"{uuid.uuid4().hex}_{original_name}"

@@ -44,7 +44,20 @@ class ThreatGraphEngineTests(unittest.TestCase):
         self.assertIn("url", node_groups)
 
     def test_threat_graph_api_endpoint(self):
+        analyst = User(username="analyst_test", email="analyst@guardly.sec", password="password", role=User.ROLE_ANALYST)
+        db.session.add(analyst)
+        db.session.commit()
+
         client = self.app.test_client()
+        # Unauthenticated request redirects to login
+        unauth_res = client.get("/api/v1/threat-graph/data")
+        self.assertEqual(unauth_res.status_code, 302)
+
+        # Authenticated analyst request succeeds
+        with client.session_transaction() as sess:
+            sess["user_id"] = analyst.id
+            sess["username"] = analyst.username
+
         res = client.get("/api/v1/threat-graph/data")
         self.assertEqual(res.status_code, 200)
         json_data = res.get_json()
