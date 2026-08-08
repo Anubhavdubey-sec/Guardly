@@ -105,7 +105,7 @@ class FirebaseAuthUnitAndIntegrationTests(unittest.TestCase):
         user, created = get_or_create_firebase_user(claims)
         self.assertTrue(created)
         self.assertEqual(user.email, "new_staff@company.com")
-        self.assertEqual(user.role, User.ROLE_ANALYST)
+        self.assertEqual(user.role, User.ROLE_USER)
         self.assertEqual(user.tenant_id, "default")
 
     def test_new_user_creation_via_phone(self):
@@ -118,9 +118,34 @@ class FirebaseAuthUnitAndIntegrationTests(unittest.TestCase):
         user, created = get_or_create_firebase_user(claims)
         self.assertTrue(created)
         self.assertEqual(user.phone_number, "+15559988")
-        self.assertEqual(user.role, User.ROLE_ANALYST)
+        self.assertEqual(user.role, User.ROLE_USER)
 
-    def test_firebase_login_api_endpoint_success(self):
+    def test_new_unprivileged_user_login_rejected_and_admin_promotion_workflow(self):
+        # 1. Brand new Google user attempts login
+        res = self.client.post("/auth/firebase", json={"id_token": "mock_token_google_unprivileged@company.com"})
+        self.assertEqual(res.status_code, 403)
+        data = res.get_json()
+        self.assertFalse(data["success"])
+        self.assertIn("restricted to staff members", data["error"].lower())
+
+        # 2. Verify user was created in DB with non-privileged ROLE_USER
+        new_user = User.query.filter_by(email="unprivileged@company.com").first()
+        self.assertIsNotNone(new_user)
+        self.assertEqual(new_user.role, User.ROLE_USER)
+
+        # 3. Admin promotes user to ANALYST
+        new_user.role = User.ROLE_ANALYST
+        db.session.commit()
+
+        # 4. Same Firebase user logs in again -> Now succeeds with 200
+        res_after = self.client.post("/auth/firebase", json={"id_token": "mock_token_google_unprivileged@company.com"})
+        self.assertEqual(res_after.status_code, 200)
+        data_after = res_after.get_json()
+        self.assertTrue(data_after["success"])
+        self.assertIn("dashboard", data_after["redirect_url"])
+
+    def test_firebase_login_api_endpoint_success_for_staff(self):
+        # Existing staff user analyst@guardly.sec logs in via Firebase
         res = self.client.post("/auth/firebase", json={"id_token": "mock_token_google_analyst@guardly.sec"})
         self.assertEqual(res.status_code, 200)
         data = res.get_json()
@@ -155,13 +180,13 @@ class FirebaseAuthUnitAndIntegrationTests(unittest.TestCase):
             "tenant_id": "Tenant_B_Unauthorized",
             "role": "admin"
         })
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.status_code, 403)  # Rejected because created with ROLE_USER
 
         # Verify Guardly server ignored forged payload and assigned trusted DB values
         new_user = User.query.filter_by(email="newstaff@company.com").first()
         self.assertIsNotNone(new_user)
         self.assertEqual(new_user.tenant_id, "default")
-        self.assertEqual(new_user.role, User.ROLE_ANALYST)
+        self.assertEqual(new_user.role, User.ROLE_USER)
 
 
 if __name__ == "__main__":

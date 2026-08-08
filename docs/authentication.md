@@ -39,9 +39,14 @@ Firebase ID Token              Firebase ID Token              Argon2/Bcrypt Hash
 ### 1. Identity Verification vs. Guardly RBAC
 - **Firebase Authentication** handles identity ("Who is this user?").
 - **Guardly Database & RBAC** handles authorization ("What is this user allowed to access?").
+- **Non-Privileged Default Role**: Brand-new Firebase-authenticated users receive `role=User.ROLE_USER` by default. Firebase sign-in only proves identity; staff access (`analyst` / `admin`) requires explicit promotion by a Guardly Administrator.
 - Client-supplied `tenant_id`, `role`, or `permissions` are **NEVER trusted**. Roles and tenant boundaries are strictly assigned by Guardly server database logic.
 
-### 2. Account Linking
+### 2. Resolved Security Finding (CWE-269 / OWASP A01:2021)
+- **Issue**: Previously, new Firebase sign-ups automatically received `role=User.ROLE_ANALYST`, allowing external Google/Phone users to bypass admin approval and immediately access staff dashboards.
+- **Remediation**: `services/firebase_auth.py` sets `role=User.ROLE_USER` on new user creation. Attempts by `ROLE_USER` accounts to authenticate via `/auth/firebase` return `403 Forbidden` until promoted by an Administrator via Guardly User Management.
+
+### 3. Account Linking
 When a user authenticates via Google or Phone OTP:
 - If a Guardly user exists with matching verified `email` or `phone_number`, the Firebase `uid` is linked to the existing user record without creating duplicate accounts.
 - Password hashes and existing staff roles (`admin` / `analyst`) are strictly preserved.

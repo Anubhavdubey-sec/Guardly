@@ -122,29 +122,9 @@
     </div>
 </div>
 
-<!-- Firebase JavaScript SDK (v9 Compat for Real Google & Phone Auth) -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const csrfToken = "{{ csrf_token() }}";
-
-    // Replace with your real Firebase Web Config from Firebase Console (Project Settings -> Web App)
-    const firebaseConfig = {
-        apiKey: "{{ config.get('FIREBASE_API_KEY', '') }}",
-        authDomain: "{{ config.get('FIREBASE_AUTH_DOMAIN', '') }}",
-        projectId: "{{ config.get('FIREBASE_PROJECT_ID', '') }}",
-        storageBucket: "{{ config.get('FIREBASE_STORAGE_BUCKET', '') }}",
-        messagingSenderId: "{{ config.get('FIREBASE_MESSAGING_SENDER_ID', '') }}",
-        appId: "{{ config.get('FIREBASE_APP_ID', '') }}"
-    };
-
-    if (firebaseConfig.apiKey && firebaseConfig.projectId && window.firebase) {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-    }
 
     function handleFirebaseToken(idToken) {
         fetch("/auth/firebase", {
@@ -169,29 +149,25 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Google Sign-In Handler (Real Google Popup)
+    // Google Sign-In Handler
     const googleBtn = document.getElementById("btn-google-login");
     if (googleBtn) {
         googleBtn.addEventListener("click", function() {
-            if (window.firebase && firebase.apps.length) {
+            if (window.firebase && window.firebase.auth) {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 firebase.auth().signInWithPopup(provider)
                     .then(result => result.user.getIdToken())
                     .then(handleFirebaseToken)
-                    .catch(err => {
-                        console.error("Google Sign-In Error:", err);
-                        alert("Google Sign-In Error: " + err.message);
-                    });
+                    .catch(err => alert("Google Sign-In failed: " + err.message));
             } else {
-                const userEmail = prompt("Enter your Gmail Address to sign in:", "admin@guardly.sec");
-                if (userEmail && userEmail.trim()) {
-                    handleFirebaseToken("mock_token_google_" + userEmail.trim().toLowerCase());
-                }
+                // Development / Test mode prompt
+                const mockToken = prompt("Enter Firebase Test Token (e.g. mock_token_google_user1@guardly.sec):", "mock_token_google_user1@guardly.sec");
+                if (mockToken) handleFirebaseToken(mockToken);
             }
         });
     }
 
-    // Phone OTP Handler (Real SMS OTP)
+    // Phone OTP Handler
     const sendOtpBtn = document.getElementById("btn-send-otp");
     const verifyOtpBtn = document.getElementById("btn-verify-otp");
     let confirmationResult = null;
@@ -200,26 +176,21 @@ document.addEventListener("DOMContentLoaded", function() {
         sendOtpBtn.addEventListener("click", function() {
             const phoneNum = document.getElementById("phone-number-input").value.trim();
             if (!phoneNum) {
-                alert("Please enter a valid phone number in E.164 format (e.g., +15550199 or +919876543210).");
+                alert("Please enter a valid phone number in E.164 format (e.g., +15550199).");
                 return;
             }
 
-            if (window.firebase && firebase.apps.length) {
-                if (!window.recaptchaVerifier) {
-                    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-                }
+            if (window.firebase && window.firebase.auth) {
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
                 firebase.auth().signInWithPhoneNumber(phoneNum, window.recaptchaVerifier)
                     .then(result => {
                         confirmationResult = result;
                         document.getElementById("phone-step-1").style.display = "none";
                         document.getElementById("phone-step-2").style.display = "block";
-                        alert("SMS OTP Code sent to " + phoneNum + "! Check your phone.");
                     })
-                    .catch(err => {
-                        console.error("SMS OTP Error:", err);
-                        alert("SMS OTP Error: " + err.message);
-                    });
+                    .catch(err => alert("SMS OTP Error: " + err.message));
             } else {
+                // Development / Test mode prompt for OTP
                 document.getElementById("phone-step-1").style.display = "none";
                 document.getElementById("phone-step-2").style.display = "block";
             }
@@ -237,6 +208,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     .then(handleFirebaseToken)
                     .catch(err => alert("Invalid OTP Code: " + err.message));
             } else {
+                // Test mode token dispatch
                 const mockPhoneToken = "mock_token_phone_" + phoneNum.replace(/[^0-9+]/g, '');
                 handleFirebaseToken(mockPhoneToken);
             }

@@ -190,7 +190,7 @@ def get_or_create_firebase_user(claims: Dict[str, Any]) -> Tuple[User, bool]:
             logger.info(f"Linked Firebase UID '{verified_uid}' to existing Guardly user with phone '{user.phone_number}'")
             return user, False
 
-    # 4. Create New Guardly User (Default Staff Analyst Role for Staff Dashboard access)
+    # 4. Create New Guardly User (Default Non-Privileged User Role - Admin promotion required for staff access)
     base_username = (
         verified_email.split("@")[0] if verified_email else f"user_{verified_phone.replace('+', '')}"
     )
@@ -206,13 +206,13 @@ def get_or_create_firebase_user(claims: Dict[str, Any]) -> Tuple[User, bool]:
         email=verified_email,
         phone_number=verified_phone,
         password=None,  # Firebase auth user, no local password
-        role=User.ROLE_ANALYST,  # Default staff role
-        tenant_id="default",    # Guardly trusted RBAC tenant
+        role=User.ROLE_USER,  # Non-privileged default role
+        tenant_id="default",  # Guardly trusted RBAC tenant
         auth_provider=provider,
         firebase_uid=verified_uid,
         is_active=True,
     )
     db.session.add(new_user)
     db.session.commit()
-    logger.info(f"Created new Guardly User '{new_user.username}' via Firebase Auth ({provider})")
+    logger.info(f"Created new Guardly User '{new_user.username}' via Firebase Auth ({provider}) with role USER")
     return new_user, True

@@ -20,10 +20,10 @@ def inject_current_user():
 
 @auth_bp.before_app_request
 def load_current_user():
-    """Make the signed-in user available to both public and staff pages."""
+    """Make the signed-in staff member available to both public and staff pages."""
     user_id = session.get("user_id")
     user = db.session.get(User, user_id) if user_id else None
-    if user_id and not user:
+    if user_id and (not user or user.role == User.ROLE_USER):
         session.clear()
         user = None
     g.current_user = user
@@ -130,9 +130,13 @@ def firebase_login():
                 db.session.rollback()
             return {"success": False, "error": "Your account has been disabled."}, 403
 
-        if user.role == User.ROLE_USER:
-            user.role = User.ROLE_ANALYST
-            db.session.commit()
+        if user.role not in {User.ROLE_ADMIN, User.ROLE_ANALYST}:
+            record_event("login_failed", target_type="user", target_id=user.id, detail="Non-staff user login attempt rejected.", actor=user)
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            return {"success": False, "error": "This sign-in is restricted to staff members."}, 403
 
         # Regenerate session for secure authentication
         session.clear()

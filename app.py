@@ -336,39 +336,6 @@ def reset_admin_password(email):
     click.echo(f"Password updated for administrator {user.email}.")
 
 
-@app.cli.command("seed-users")
-def seed_users_cmd():
-    """Seed initial development/staff accounts for local testing."""
-    admin = User.query.filter_by(email="admin@guardly.sec").first()
-    if not admin:
-        admin = User(
-            username="admin",
-            email="admin@guardly.sec",
-            password=generate_password_hash("AdminPass123!"),
-            role=User.ROLE_ADMIN,
-            tenant_id="default",
-            auth_provider=User.AUTH_PASSWORD,
-            is_active=True,
-        )
-        db.session.add(admin)
-
-    analyst = User.query.filter_by(email="analyst@guardly.sec").first()
-    if not analyst:
-        analyst = User(
-            username="analyst",
-            email="analyst@guardly.sec",
-            password=generate_password_hash("AnalystPass123!"),
-            role=User.ROLE_ANALYST,
-            tenant_id="default",
-            auth_provider=User.AUTH_PASSWORD,
-            is_active=True,
-        )
-        db.session.add(analyst)
-
-    db.session.commit()
-    click.echo("Seeded default staff users: admin@guardly.sec and analyst@guardly.sec")
-
-
 @app.cli.command("run-smtp")
 @click.option("--host", default=None, help="Host interface to bind the SMTP receiver.")
 @click.option("--port", type=int, default=None, help="Port to listen on.")
