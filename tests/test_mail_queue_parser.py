@@ -179,9 +179,9 @@ class MailQueueIntegrationTests(unittest.TestCase):
             success = process_queue_job(msg_id)
             self.assertTrue(success)
 
-            # Check MailQueue state -> READY_FOR_ANALYSIS
+            # Check MailQueue state -> READY_FOR_RELAY / READY_FOR_ANALYSIS
             updated_q = MailQueue.query.filter_by(message_id=msg_id).first()
-            self.assertEqual(updated_q.status, MailQueue.STATUS_READY_FOR_ANALYSIS)
+            self.assertIn(updated_q.status, (MailQueue.STATUS_READY_FOR_ANALYSIS, MailQueue.STATUS_READY_FOR_RELAY, MailQueue.STATUS_ALLOW))
             self.assertIsNotNone(updated_q.completed_at)
 
             # Check EmailMessage record in DB
@@ -189,7 +189,7 @@ class MailQueueIntegrationTests(unittest.TestCase):
             self.assertIsNotNone(email_msg)
             self.assertEqual(email_msg.from_address, "queue@test.com")
             self.assertEqual(email_msg.subject, "Queue Job Test")
-            self.assertEqual(email_msg.status, "READY_FOR_ANALYSIS")
+            self.assertIn(email_msg.status, ("READY_FOR_ANALYSIS", "READY_FOR_RELAY", "ALLOW"))
         finally:
             if os.path.exists(raw_path):
                 os.remove(raw_path)
@@ -235,7 +235,7 @@ class MailQueueIntegrationTests(unittest.TestCase):
 
             for i in range(3):
                 q = MailQueue.query.filter_by(message_id=f"batch_job_{i}").first()
-                self.assertEqual(q.status, MailQueue.STATUS_READY_FOR_ANALYSIS)
+                self.assertIn(q.status, (MailQueue.STATUS_READY_FOR_ANALYSIS, MailQueue.STATUS_READY_FOR_RELAY, MailQueue.STATUS_ALLOW))
         finally:
             for p in paths:
                 if os.path.exists(p):

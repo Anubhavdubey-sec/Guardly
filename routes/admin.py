@@ -16,16 +16,33 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 @login_required
 @roles_required(User.ROLE_ADMIN)
 def dashboard():
+    # Import Mail Enforcement Models (Module 4)
+    from models.policy import MailDecision, MailQuarantine
+    from models.email_message import EmailMessage
+
     users_count = User.query.count()
     scans_count = EmailScan.query.count()
     high_risk_count = EmailScan.query.filter_by(verdict="High Risk").count()
     recent_logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(10).all()
+
+    total_received = EmailMessage.query.count()
+    allowed_count = MailDecision.query.filter_by(decision="ALLOW").count()
+    review_count = EmailMessage.query.filter_by(status="REVIEW").count()
+    quarantined_count = MailQuarantine.query.filter_by(status="QUARANTINED").count()
+    rejected_count = MailDecision.query.filter_by(decision="REJECT").count()
+    recent_decisions = MailDecision.query.order_by(MailDecision.created_at.desc()).limit(10).all()
+
     stats = {
         "users": users_count,
         "scans": scans_count,
         "high_risk": high_risk_count,
+        "total_received": total_received,
+        "allowed": allowed_count,
+        "review": review_count,
+        "quarantined": quarantined_count,
+        "rejected": rejected_count,
     }
-    return render_template("admin_dashboard.html", stats=stats, recent_logs=recent_logs)
+    return render_template("admin_dashboard.html", stats=stats, recent_logs=recent_logs, recent_decisions=recent_decisions)
 
 
 @admin_bp.route("/users")

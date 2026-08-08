@@ -168,13 +168,16 @@ def process_queue_job(message_id: str) -> bool:
             )
             db.session.add(email_scan)
 
-        # Update queue job status to READY_FOR_ANALYSIS
-        queue_item.status = MailQueue.STATUS_READY_FOR_ANALYSIS
+        # Execute Mail Enforcement Engine (Module 4)
+        from services.mail_enforcement import enforce_mail_decision
+        decision, final_status = enforce_mail_decision(email_msg, analysis_res, tenant_id="default")
+
+        queue_item.status = final_status
         queue_item.completed_at = datetime.now(timezone.utc)
         queue_item.error_message = None
 
         db.session.commit()
-        logger.info(f"Successfully processed mail queue job {message_id} -> READY_FOR_ANALYSIS (Score: {analysis_res.get('risk_score')}, Verdict: {verdict_str})")
+        logger.info(f"Successfully processed mail queue job {message_id} -> Decision={decision}, Status={final_status} (Score: {analysis_res.get('risk_score')})")
         return True
 
     except Exception as exc:
