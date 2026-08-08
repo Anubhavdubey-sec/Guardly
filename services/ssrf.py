@@ -43,6 +43,19 @@ def is_ip_private_or_internal(ip_val):
     ):
         return True
 
+    # Handle IPv6-mapped IPv4 addresses (e.g., ::ffff:127.0.0.1 or ::ffff:10.0.0.1)
+    if hasattr(ip_obj, "ipv4_mapped") and ip_obj.ipv4_mapped:
+        mapped_ip = ip_obj.ipv4_mapped
+        if (
+            mapped_ip.is_private
+            or mapped_ip.is_loopback
+            or mapped_ip.is_link_local
+            or mapped_ip.is_reserved
+            or mapped_ip.is_multicast
+            or mapped_ip.is_unspecified
+        ):
+            return True
+
     for net in METADATA_SUBNETS:
         if ip_obj in net:
             return True

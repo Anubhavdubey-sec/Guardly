@@ -121,7 +121,15 @@ def parse_and_normalize_url(url_string: str) -> Dict[str, Any]:
     subdomain = ""
     if not is_ip and hostname_eval:
         parts = hostname_eval.split(".")
-        if len(parts) >= 2:
+        known_2part_tlds = {
+            "co.uk", "com.au", "co.in", "org.uk", "gov.uk", "edu.au",
+            "net.au", "co.jp", "com.br", "co.nz", "com.sg", "com.tw",
+            "com.mx", "co.za"
+        }
+        if len(parts) >= 3 and ".".join(parts[-2:]).lower() in known_2part_tlds:
+            root_domain = ".".join(parts[-3:])
+            subdomain = ".".join(parts[:-3]) if len(parts) > 3 else ""
+        elif len(parts) >= 2:
             root_domain = ".".join(parts[-2:])
             subdomain = ".".join(parts[:-2]) if len(parts) > 2 else ""
 
