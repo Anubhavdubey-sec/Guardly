@@ -5,6 +5,7 @@ Includes executive verdict gauges, email telemetry, DFIR header findings, URL th
 NLP social engineering scores, SOC playbooks, and compiled YARA rules.
 """
 
+import html
 import io
 from datetime import datetime, timezone
 from typing import Any, Dict
@@ -14,6 +15,23 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+
+def _clean_text(val: Any) -> str:
+    if val is None:
+        return ""
+    text_str = str(val)
+    # Escape XML / HTML special characters for ReportLab Paragraph
+    escaped = html.escape(text_str)
+    # Replace common non-ASCII typographic characters
+    replacements = {
+        "“": '"', "”": '"', "‘": "'", "’": "'", "—": "-", "–": "-",
+        "…": "...", "•": "*", "€": "EUR", "£": "GBP", "¥": "JPY"
+    }
+    for orig, repl in replacements.items():
+        escaped = escaped.replace(orig, repl)
+    # Safe encoding for standard ReportLab fonts
+    return escaped.encode("latin-1", errors="replace").decode("latin-1")
 
 
 def generate_pdf_scan_report(email_data: Dict[str, Any], analysis: Dict[str, Any], scan_id: int) -> bytes:
@@ -118,11 +136,11 @@ def generate_pdf_scan_report(email_data: Dict[str, Any], analysis: Dict[str, Any
     # 3. Message Telemetry Summary
     story.append(Paragraph("Message Metadata & Telemetry", section_heading_style))
     meta_data = [
-        [Paragraph("<b>Subject:</b>", body_style), Paragraph(str(email_data.get("subject", "N/A")), body_style)],
-        [Paragraph("<b>From:</b>", body_style), Paragraph(str(email_data.get("from", "N/A")), mono_style)],
-        [Paragraph("<b>To / Recipient:</b>", body_style), Paragraph(str(email_data.get("to", "N/A")), mono_style)],
-        [Paragraph("<b>Reply-To Domain:</b>", body_style), Paragraph(str(email_data.get("reply_to", "N/A")), mono_style)],
-        [Paragraph("<b>Sender Domain:</b>", body_style), Paragraph(str(email_data.get("sender_domain", "N/A")), mono_style)],
+        [Paragraph("<b>Subject:</b>", body_style), Paragraph(_clean_text(email_data.get("subject", "N/A")), body_style)],
+        [Paragraph("<b>From:</b>", body_style), Paragraph(_clean_text(email_data.get("from", "N/A")), mono_style)],
+        [Paragraph("<b>To / Recipient:</b>", body_style), Paragraph(_clean_text(email_data.get("to", "N/A")), mono_style)],
+        [Paragraph("<b>Reply-To Domain:</b>", body_style), Paragraph(_clean_text(email_data.get("reply_to", "N/A")), mono_style)],
+        [Paragraph("<b>Sender Domain:</b>", body_style), Paragraph(_clean_text(email_data.get("sender_domain", "N/A")), mono_style)],
     ]
     meta_table = Table(meta_data, colWidths=[130, 410])
     meta_table.setStyle(TableStyle([
@@ -138,9 +156,9 @@ def generate_pdf_scan_report(email_data: Dict[str, Any], analysis: Dict[str, Any
     auth = analysis.get("auth_results", {})
     auth_data = [
         [Paragraph("<b>Check</b>", body_style), Paragraph("<b>Status Verdict</b>", body_style)],
-        [Paragraph("SPF (Sender Policy Framework)", body_style), Paragraph(str(auth.get("spf", "neutral")).upper(), body_style)],
-        [Paragraph("DKIM (DomainKeys Identified Mail)", body_style), Paragraph(str(auth.get("dkim", "neutral")).upper(), body_style)],
-        [Paragraph("DMARC Alignment", body_style), Paragraph(str(auth.get("dmarc", "neutral")).upper(), body_style)],
+        [Paragraph("SPF (Sender Policy Framework)", body_style), Paragraph(_clean_text(auth.get("spf", "neutral")).upper(), body_style)],
+        [Paragraph("DKIM (DomainKeys Identified Mail)", body_style), Paragraph(_clean_text(auth.get("dkim", "neutral")).upper(), body_style)],
+        [Paragraph("DMARC Alignment", body_style), Paragraph(_clean_text(auth.get("dmarc", "neutral")).upper(), body_style)],
     ]
     auth_table = Table(auth_data, colWidths=[300, 240])
     auth_table.setStyle(TableStyle([
@@ -157,7 +175,7 @@ def generate_pdf_scan_report(email_data: Dict[str, Any], analysis: Dict[str, Any
         story.append(Paragraph("Observed Threat Anomalies & Findings", section_heading_style))
         find_rows = [[Paragraph("<b>#</b>", body_style), Paragraph("<b>Finding Description</b>", body_style)]]
         for idx, f in enumerate(findings[:8], 1):
-            find_rows.append([Paragraph(str(idx), body_style), Paragraph(str(f), body_style)])
+            find_rows.append([Paragraph(str(idx), body_style), Paragraph(_clean_text(f), body_style)])
         find_table = Table(find_rows, colWidths=[30, 510])
         find_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#fee2e2")),
@@ -171,8 +189,8 @@ def generate_pdf_scan_report(email_data: Dict[str, Any], analysis: Dict[str, Any
     nlp = analysis.get("nlp_analysis")
     if nlp:
         story.append(Paragraph("AI NLP Social Engineering Intelligence", section_heading_style))
-        se_text = f"<b>Social Engineering Score:</b> {nlp.get('social_engineering_score', 0)} / 100 &nbsp;&nbsp;|&nbsp;&nbsp; <b>Risk Level:</b> {nlp.get('threat_level', 'Low')}"
-        tactics_str = ", ".join(nlp.get("tactics", [])) or "None detected"
+        se_text = f"<b>Social Engineering Score:</b> {nlp.get('social_engineering_score', 0)} / 100 &nbsp;&nbsp;|&nbsp;&nbsp; <b>Risk Level:</b> {_clean_text(nlp.get('threat_level', 'Low'))}"
+        tactics_str = _clean_text(", ".join(nlp.get("tactics", [])) or "None detected")
         nlp_rows = [
             [Paragraph(se_text, body_style)],
             [Paragraph(f"<b>Detected NLP Vectors:</b> {tactics_str}", body_style)],
@@ -190,7 +208,8 @@ def generate_pdf_scan_report(email_data: Dict[str, Any], analysis: Dict[str, Any
     yara_code = analysis.get("yara_rule")
     if yara_code:
         story.append(Paragraph("Compiled Enterprise YARA Rule", section_heading_style))
-        yara_p = Paragraph(yara_code.replace("\n", "<br/>").replace(" ", "&nbsp;"), mono_style)
+        clean_yara = _clean_text(yara_code).replace("\n", "<br/>").replace(" ", "&nbsp;")
+        yara_p = Paragraph(clean_yara, mono_style)
         yara_table = Table([[yara_p]], colWidths=[540])
         yara_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#0f172a")),

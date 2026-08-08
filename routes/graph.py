@@ -4,13 +4,16 @@ Exposes interactive visualization workspace and JSON APIs for DFIR campaign corr
 """
 
 from flask import Blueprint, jsonify, render_template, request
-from routes.auth import login_required
+from models.user import User
+from routes.auth import login_required, roles_required
 from services.graph_builder import build_threat_graph_data
 
 graph_bp = Blueprint("graph", __name__)
 
 
 @graph_bp.route("/threat-graph")
+@login_required
+@roles_required(User.ROLE_ADMIN, User.ROLE_ANALYST)
 def view_threat_graph():
     """
     Renders the SOC Visual Threat Graph & Campaign Canvas workspace.
@@ -20,6 +23,8 @@ def view_threat_graph():
 
 
 @graph_bp.route("/api/v1/threat-graph/data")
+@login_required
+@roles_required(User.ROLE_ADMIN, User.ROLE_ANALYST)
 def threat_graph_api():
     """
     JSON API returning graph nodes and edges for network canvas.

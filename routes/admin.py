@@ -91,8 +91,8 @@ def create_user():
             flash("Username and email are required.", "danger")
             return render_template("admin_user_create.html", roles=User.ROLES)
 
-        if User.query.filter_by(email=email).first():
-            flash("A user with that email already exists.", "danger")
+        if User.query.filter((User.email == email) | (User.username == username)).first():
+            flash("A user with that email or username already exists.", "danger")
             return render_template("admin_user_create.html", roles=User.ROLES)
 
         is_valid, errors, _ = validate_password(password, username=username, email=email)
@@ -115,6 +115,33 @@ def create_user():
         return redirect(url_for("admin.users"))
 
     return render_template("admin_user_create.html", roles=User.ROLES)
+
+
+@admin_bp.route("/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+@roles_required(User.ROLE_ADMIN)
+def delete_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("admin.users"))
+
+    if user.id == g.current_user.id:
+        flash("You cannot delete your own active administrator account.", "danger")
+        return redirect(url_for("admin.users"))
+
+    if user.role == User.ROLE_ADMIN:
+        admin_count = User.query.filter_by(role=User.ROLE_ADMIN).count()
+        if admin_count <= 1:
+            flash("Cannot delete the last administrator account.", "danger")
+            return redirect(url_for("admin.users"))
+
+    username = user.username
+    db.session.delete(user)
+    record_event("user_deleted", target_type="user", target_id=user_id, detail=f"Deleted user {username}.", actor=g.current_user)
+    db.session.commit()
+    flash(f"User {username} deleted successfully.", "success")
+    return redirect(url_for("admin.users"))
 
 
 @admin_bp.route("/users/<int:user_id>/reset-password", methods=["POST"])
