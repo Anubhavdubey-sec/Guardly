@@ -36,5 +36,9 @@ def apply_schema_migrations():
                 if "created_at" not in log_cols:
                     conn.execute(text("ALTER TABLE system_logs ADD COLUMN created_at DATETIME"))
                 conn.commit()
+
+        # Ensure Phase 4 Module 2 tables exist
+        db.create_all()
     except Exception as e:
         print(f"[Schema Migration] Notice: {e}")
+

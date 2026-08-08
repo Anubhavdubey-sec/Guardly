@@ -108,6 +108,21 @@ class GuardlySMTPHandler:
         try:
             saved_path = save_raw_email(content_bytes, storage_path=self.storage_path)
             logger.info(f"Accepted and stored raw email message at: {saved_path}")
+
+            # Enqueue into Mail Queue for async parsing
+            try:
+                from services.mail_queue import enqueue_message
+                from flask import has_app_context, current_app
+                if has_app_context():
+                    enqueue_message(saved_path)
+                else:
+                    from app import create_app
+                    _app = create_app()
+                    with _app.app_context():
+                        enqueue_message(saved_path)
+            except Exception as q_exc:
+                logger.error(f"Failed to enqueue message {saved_path}: {q_exc}")
+
             return "250 2.0.0 Message accepted for delivery"
         except Exception as exc:
             logger.error(f"Local storage failure handling SMTP DATA: {str(exc)}")
