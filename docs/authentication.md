@@ -89,14 +89,23 @@ FIREBASE_TEST_MODE=true
 
 ---
 
-## Testing Commands
+## Testing Commands & Local Development
+
+### Seed Local Development Staff Accounts
+For local testing and development only (disabled in production / non-debug mode):
+```powershell
+flask seed-users
+```
+Creates:
+- `admin@guardly.sec` (Role: `admin`)
+- `analyst@guardly.sec` (Role: `analyst`)
 
 ### Run Authentication Test Suite
 ```powershell
 .venv\Scripts\python.exe -m unittest tests/test_firebase_auth.py
 ```
 
-### Run Full System Test Suite (177 Tests)
+### Run Full System Test Suite
 ```powershell
 .venv\Scripts\python.exe -m unittest discover tests
 ```

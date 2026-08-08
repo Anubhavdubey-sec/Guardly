@@ -172,7 +172,59 @@ def create_app(test_config=None):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
+    register_cli_commands(app)
     return app
+
+
+def register_cli_commands(app):
+    """Registers CLI commands on the Flask application instance."""
+    @app.cli.command("seed-users")
+    def seed_users_cmd():
+        """Seed initial local development staff accounts (admin@guardly.sec & analyst@guardly.sec)."""
+        if app.config.get("ENV") == "production" or not app.config.get("DEBUG"):
+            click.echo("Error: 'seed-users' command is disabled in production / non-debug mode for security.", err=True)
+            return
+
+        from werkzeug.security import generate_password_hash
+        from models.user import User, db
+
+        admin_email = "admin@guardly.sec"
+        analyst_email = "analyst@guardly.sec"
+
+        admin_user = User.query.filter_by(email=admin_email).first()
+        if not admin_user:
+            admin_user = User(
+                username="admin_user",
+                email=admin_email,
+                password=generate_password_hash("AdminPass123!"),
+                role=User.ROLE_ADMIN,
+                tenant_id="default",
+                auth_provider=User.AUTH_PASSWORD,
+                is_active=True,
+            )
+            db.session.add(admin_user)
+            click.echo(f"Seeded admin user: {admin_email}")
+        else:
+            click.echo(f"Admin user already exists: {admin_email}")
+
+        analyst_user = User.query.filter_by(email=analyst_email).first()
+        if not analyst_user:
+            analyst_user = User(
+                username="analyst_user",
+                email=analyst_email,
+                password=generate_password_hash("AnalystPass123!"),
+                role=User.ROLE_ANALYST,
+                tenant_id="default",
+                auth_provider=User.AUTH_PASSWORD,
+                is_active=True,
+            )
+            db.session.add(analyst_user)
+            click.echo(f"Seeded analyst user: {analyst_email}")
+        else:
+            click.echo(f"Analyst user already exists: {analyst_email}")
+
+        db.session.commit()
+        click.echo("Staff account seeding completed successfully.")
 
 
 app = create_app()
@@ -417,6 +469,55 @@ def scan_gmail_inbox_cmd(email, max_results):
     click.echo(f"Starting Guardly Post-Delivery Scan for {email}...")
     res = process_gmail_inbox_scans(app, [email], max_results=max_results)
     click.echo(f"Post-Delivery Scan Complete! Total Scanned: {res['total_scanned']}, Remediated (Trashed): {res['total_remediated']}")
+
+
+@app.cli.command("seed-users")
+def seed_users_cmd():
+    """Seed initial local development staff accounts (admin@guardly.sec & analyst@guardly.sec)."""
+    if app.config.get("ENV") == "production" or not app.config.get("DEBUG"):
+        click.echo("Error: 'seed-users' command is disabled in production / non-debug mode for security.", err=True)
+        return
+
+    from werkzeug.security import generate_password_hash
+    from models.user import User, db
+
+    admin_email = "admin@guardly.sec"
+    analyst_email = "analyst@guardly.sec"
+
+    admin_user = User.query.filter_by(email=admin_email).first()
+    if not admin_user:
+        admin_user = User(
+            username="admin_user",
+            email=admin_email,
+            password=generate_password_hash("AdminPass123!"),
+            role=User.ROLE_ADMIN,
+            tenant_id="default",
+            auth_provider=User.AUTH_PASSWORD,
+            is_active=True,
+        )
+        db.session.add(admin_user)
+        click.echo(f"Seeded admin user: {admin_email}")
+    else:
+        click.echo(f"Admin user already exists: {admin_email}")
+
+    analyst_user = User.query.filter_by(email=analyst_email).first()
+    if not analyst_user:
+        analyst_user = User(
+            username="analyst_user",
+            email=analyst_email,
+            password=generate_password_hash("AnalystPass123!"),
+            role=User.ROLE_ANALYST,
+            tenant_id="default",
+            auth_provider=User.AUTH_PASSWORD,
+            is_active=True,
+        )
+        db.session.add(analyst_user)
+        click.echo(f"Seeded analyst user: {analyst_email}")
+    else:
+        click.echo(f"Analyst user already exists: {analyst_email}")
+
+    db.session.commit()
+    click.echo("Staff account seeding completed successfully.")
 
 
 if __name__ == "__main__":

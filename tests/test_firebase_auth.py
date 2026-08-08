@@ -241,6 +241,32 @@ class FirebaseAuthUnitAndIntegrationTests(unittest.TestCase):
             self.assertEqual(result[0], "legacy_user")
             self.assertEqual(result[2], "analyst")
 
+    def test_seed_users_cli_command_dev_and_production_guard(self):
+        """
+        Tests that seed-users CLI command seeds staff accounts in debug/dev mode,
+        and refuses to execute in production or non-debug mode.
+        """
+        runner = self.app.test_cli_runner()
+
+        # 1. Test in Production / Non-debug mode -> Should be refused
+        self.app.config["DEBUG"] = False
+        res_prod = runner.invoke(args=["seed-users"])
+        self.assertIn("disabled in production", res_prod.output.lower())
+
+        # 2. Test in Debug mode -> Should succeed
+        self.app.config["DEBUG"] = True
+        res_dev = runner.invoke(args=["seed-users"])
+        self.assertIn("completed successfully", res_dev.output.lower())
+
+        # Verify admin@guardly.sec and analyst@guardly.sec were created
+        admin = User.query.filter_by(email="admin@guardly.sec").first()
+        self.assertIsNotNone(admin)
+        self.assertEqual(admin.role, User.ROLE_ADMIN)
+
+        analyst = User.query.filter_by(email="analyst@guardly.sec").first()
+        self.assertIsNotNone(analyst)
+        self.assertEqual(analyst.role, User.ROLE_ANALYST)
+
 
 if __name__ == "__main__":
     unittest.main()
