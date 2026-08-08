@@ -96,6 +96,81 @@ def login():
     return render_template("login.html")
 
 
+@auth_bp.route("/auth/firebase", methods=["POST"])
+@auth_bp.route("/api/v1/auth/firebase", methods=["POST"])
+@limiter.limit("10 per minute")
+def firebase_login():
+    """
+    Firebase Authentication endpoint (Google Sign-In & Phone OTP).
+    Verifies Firebase ID Token, extracts claims, performs account linking,
+    applies Guardly RBAC, regenerates session, and returns JSON response.
+    """
+    data = request.get_json(silent=True) or request.form
+    id_token = data.get("id_token")
+
+    if not id_token:
+        record_event("login_failed", target_type="auth", detail="Firebase login attempt missing ID token.", actor_name="Unknown")
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return {"success": False, "error": "ID token is required."}, 400
+
+    from services.firebase_auth import verify_firebase_id_token, get_or_create_firebase_user
+
+    try:
+        claims = verify_firebase_id_token(id_token)
+        user, created = get_or_create_firebase_user(claims)
+
+        if not user.is_active:
+            record_event("login_failed", target_type="user", target_id=user.id, detail="Inactive user login attempt rejected.", actor=user)
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            return {"success": False, "error": "Your account has been disabled."}, 403
+
+        if user.role not in {User.ROLE_ADMIN, User.ROLE_ANALYST}:
+            record_event("login_failed", target_type="user", target_id=user.id, detail="Non-staff user login attempt rejected.", actor=user)
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            return {"success": False, "error": "This sign-in is restricted to staff members."}, 403
+
+        # Regenerate session for secure authentication
+        session.clear()
+        session["user_id"] = user.id
+        session["username"] = user.username
+
+        record_event(
+            "login_succeeded",
+            target_type="user",
+            target_id=user.id,
+            detail=f"User logged in via Firebase ({user.auth_provider}).",
+            actor=user
+        )
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        return {
+            "success": True,
+            "redirect_url": url_for("auth.dashboard"),
+            "user": user.to_dict(),
+        }, 200
+
+    except Exception as exc:
+        err_msg = str(exc)
+        record_event("login_failed", target_type="auth", detail=f"Firebase authentication failed: {err_msg}", actor_name="Unknown")
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return {"success": False, "error": "Authentication failed. Invalid or expired token."}, 401
+
+
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     flash("Public email scanning does not require an account.", "info")
