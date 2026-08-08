@@ -32,6 +32,13 @@ class EmailMessage(db.Model):
     status = db.Column(db.String(32), default="READY_FOR_ANALYSIS", nullable=False)
     error_message = db.Column(db.Text, nullable=True)
 
+    # Threat Analysis Engine Fields (Module 3)
+    risk_score = db.Column(db.Integer, default=0, nullable=False)
+    severity = db.Column(db.String(32), default="LOW", nullable=False)
+    recommendation = db.Column(db.String(32), default="ALLOW", nullable=False)
+    findings_json = db.Column(db.Text, nullable=True)  # JSON array of findings
+    analysis_json = db.Column(db.Text, nullable=True)  # Complete Analysis Result JSON
+
     attachments = db.relationship("EmailAttachment", backref="email_message", lazy="dynamic", cascade="all, delete-orphan")
 
     def to_dict(self):

@@ -86,6 +86,11 @@ def process_queue_job(message_id: str) -> bool:
         # Parse complete RFC message
         parsed_data = parse_raw_email(raw_bytes, fallback_message_id=message_id)
 
+        # Execute Threat Analysis Engine (Module 3)
+        from services.threat_analysis import ThreatAnalysisEngine
+        engine = ThreatAnalysisEngine()
+        analysis_res = engine.analyze(parsed_data)
+
         # Save/Update EmailMessage record in DB
         email_msg = EmailMessage.query.filter_by(message_id=message_id).first()
         if not email_msg:
@@ -110,6 +115,13 @@ def process_queue_job(message_id: str) -> bool:
         email_msg.status = "READY_FOR_ANALYSIS"
         email_msg.error_message = None
 
+        # Threat Analysis Results
+        email_msg.risk_score = analysis_res.get("risk_score", 0)
+        email_msg.severity = analysis_res.get("severity", "LOW")
+        email_msg.recommendation = analysis_res.get("recommendation", "ALLOW")
+        email_msg.findings_json = json.dumps(analysis_res.get("findings", []))
+        email_msg.analysis_json = json.dumps(analysis_res)
+
         # Save individual attachment records
         for att_info in parsed_data.get("attachments", []):
             existing_att = EmailAttachment.query.filter_by(
@@ -128,13 +140,41 @@ def process_queue_job(message_id: str) -> bool:
                 )
                 db.session.add(att_record)
 
+        # Sync into EmailScan table for backward compatibility with Guardly Dashboard & Reports
+        from models.scan import EmailScan
+        verdict_str = f"{analysis_res.get('severity', 'LOW').title()} Risk"
+        if verdict_str == "Critical Risk":
+            verdict_str = "High Risk"
+        elif verdict_str == "Low Risk":
+            verdict_str = "Low Risk"
+
+        email_scan = EmailScan.query.filter_by(subject=parsed_data.get("subject"), sender=parsed_data.get("from")).first()
+        if not email_scan:
+            receiver_str = parsed_data.get("to")[0] if parsed_data.get("to") else "unknown@target.local"
+            email_scan = EmailScan(
+                sender=parsed_data.get("from"),
+                receiver=receiver_str,
+                subject=parsed_data.get("subject"),
+                email_date=parsed_data.get("date"),
+                reply_to=parsed_data.get("reply_to"),
+                email_body=parsed_data.get("text_body"),
+                risk_score=analysis_res.get("risk_score", 0),
+                verdict=verdict_str,
+                findings=json.dumps(analysis_res.get("findings", [])),
+                urls=json.dumps(parsed_data.get("urls", [])),
+                attachments=json.dumps(parsed_data.get("attachments", [])),
+                headers=json.dumps(parsed_data.get("headers", {})),
+                iocs=json.dumps(analysis_res.get("iocs", {})),
+            )
+            db.session.add(email_scan)
+
         # Update queue job status to READY_FOR_ANALYSIS
         queue_item.status = MailQueue.STATUS_READY_FOR_ANALYSIS
         queue_item.completed_at = datetime.now(timezone.utc)
         queue_item.error_message = None
 
         db.session.commit()
-        logger.info(f"Successfully processed mail queue job {message_id} -> READY_FOR_ANALYSIS")
+        logger.info(f"Successfully processed mail queue job {message_id} -> READY_FOR_ANALYSIS (Score: {analysis_res.get('risk_score')}, Verdict: {verdict_str})")
         return True
 
     except Exception as exc:
