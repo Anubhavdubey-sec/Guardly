@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}New Investigation Case · Guardly{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="soc-card p-4 mb-4"><div class="d-flex justify-content-between align-items-start gap-3"><div><p class="eyebrow mb-1 text-primary fw-bold font-mono"><i class="bi bi-briefcase-plus me-1"></i> CASE MANAGEMENT</p><h1 class="h2 fw-bold text-white mb-1">Create investigation case</h1><p class="text-muted small mb-0">Set ownership, workflow status, and the evidence to investigate.</p></div><a class="btn btn-outline-light btn-sm" href="{{ url_for('cases.list_cases') }}"><i class="bi bi-arrow-left me-1"></i> Cases</a></div></div>
+    <form method="post" class="soc-card p-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+            <div class="col-12"><label class="form-label" for="case-title">Case title</label><input id="case-title" class="form-control" name="title" maxlength="180" required value="{{ request.form.get('title', '') }}" placeholder="e.g. Credential-harvesting campaign — September"></div>
+            <div class="col-md-4"><label class="form-label" for="case-status">Status</label><select id="case-status" class="form-select" name="status">{% for status in statuses %}<option value="{{ status }}" {% if request.form.get('status', 'Open') == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label class="form-label" for="case-assignee">Assignee</label><select id="case-assignee" class="form-select" name="assigned_to_id"><option value="">Unassigned</option>{% for staff_member in staff_members %}<option value="{{ staff_member.id }}" {% if request.form.get('assigned_to_id')|int == staff_member.id %}selected{% endif %}>{{ staff_member.username }} · {{ staff_member.role|title }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label class="form-label" for="case-verdict">Verdict override</label><select id="case-verdict" class="form-select" name="verdict_override">{% for verdict in verdict_overrides %}<option value="{{ verdict }}" {% if request.form.get('verdict_override', '') == verdict %}selected{% endif %}>{{ verdict or 'No override' }}</option>{% endfor %}</select></div>
+            <div class="col-12"><label class="form-label" for="case-tags">Tags</label><input id="case-tags" class="form-control" name="tags" maxlength="409" value="{{ request.form.get('tags', '') }}" placeholder="credential-theft, vip, urgent"><div class="form-text">Comma-separated; up to 10 tags.</div></div>
+            <div class="col-12"><label class="form-label" for="initial-note">Initial analyst note</label><textarea id="initial-note" class="form-control" name="initial_note" rows="6" maxlength="8000" placeholder="Record the initial triage decision, containment action, or evidence.">{{ request.form.get('initial_note', request.form.get('analyst_notes', '')) }}</textarea><div class="form-text">Notes are added to an author-stamped case timeline and cannot overwrite each other.</div></div>
+            <fieldset class="col-12"><legend class="form-label mb-1">Link scans</legend><p id="case-scan-help" class="form-text mt-0">Select each report to attach. This works with touch and keyboard controls; linked IOCs are added automatically.</p>{% if available_scans %}<div class="border rounded border-secondary border-opacity-50 p-2" role="group" aria-describedby="case-scan-help">{% for scan in available_scans %}<div class="form-check py-2 px-2 border-bottom border-secondary border-opacity-25{% if loop.last %} border-bottom-0{% endif %}"><input class="form-check-input" type="checkbox" name="scan_ids" value="{{ scan.id }}" id="case-scan-{{ scan.id }}" {% if scan.id in selected_scan_ids %}checked{% endif %}><label class="form-check-label d-block ms-1" for="case-scan-{{ scan.id }}"><span class="font-mono">#{{ scan.id }}</span> · {{ scan.verdict }} · {{ scan.subject or 'Untitled message' }}</label></div>{% endfor %}</div>{% else %}<p class="text-muted mb-0">No accessible scans are available to link.</p>{% endif %}</fieldset>
+        </div>
+        <div class="mt-4 d-flex gap-2"><button class="btn btn-primary" type="submit"><i class="bi bi-briefcase-plus me-1"></i> Create case</button><a class="btn btn-outline-light" href="{{ url_for('cases.list_cases') }}">Cancel</a></div>
+    </form>
+</div>
+{% endblock %}

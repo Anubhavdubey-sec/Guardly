@@ -1,0 +1,152 @@
+import os
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from app import create_app
+from models.scan import EmailScan
+from models.system_log import SystemLog
+from models.user import User, db
+
+
+class RoleAccessTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_directory = tempfile.TemporaryDirectory()
+        root = self.temp_directory.name.replace("\\", "/")
+        self.app = create_app({
+            "TESTING": True,
+            "WTF_CSRF_ENABLED": False,
+            "SECRET_KEY": "test-secret",
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "UPLOAD_FOLDER": os.path.join(self.temp_directory.name, "uploads"),
+            "PUBLIC_LOOKUPS_ENABLED": False,
+        })
+        with self.app.app_context():
+            db.drop_all()
+            db.create_all()
+            self.admin = User(username="Admin", email="admin@example.com", password="unused", role=User.ROLE_ADMIN)
+            self.analyst = User(username="Analyst", email="analyst@example.com", password="unused", role=User.ROLE_USER)
+            self.normal_user = User(username="Normal", email="normal@example.com", password="unused", role=User.ROLE_USER)
+            db.session.add_all([self.admin, self.analyst, self.normal_user])
+            db.session.flush()
+            self.scan = EmailScan(
+                user_id=self.analyst.id,
+                sender="sender@example.com",
+                receiver="normal@example.com",
+                subject="Private report",
+                risk_score=10,
+                verdict="Low Risk",
+            )
+            db.session.add(self.scan)
+            db.session.commit()
+            self.admin_id = self.admin.id
+            self.analyst_id = self.analyst.id
+            self.normal_user_id = self.normal_user.id
+            self.scan_id = self.scan.id
+        self.client = self.app.test_client()
+
+    def tearDown(self):
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+            for engine in db.engines.values():
+                engine.dispose()
+        self.temp_directory.cleanup()
+
+    def _login_as(self, user_id, username):
+        with self.client.session_transaction() as session:
+            session.clear()
+            session["user_id"] = user_id
+            session["username"] = username
+
+    def test_normal_user_cannot_access_reports_and_analyst_is_read_only(self):
+        # Normal user (ROLE_USER) cannot access admin panel
+        self._login_as(self.normal_user_id, "Normal")
+        self.assertEqual(self.client.get("/admin/").status_code, 302)
+        # Normal user gets 404 (not 302) on a scan owned by another user -- IDOR protection
+        self.assertEqual(self.client.get(f"/scans/{self.scan_id}").status_code, 404)
+        self.assertEqual(self.client.get("/upload").status_code, 200)
+
+        # Analyst (now ROLE_USER) can access and manage their own scan
+        self._login_as(self.analyst_id, "Analyst")
+        self.assertEqual(self.client.get(f"/scans/{self.scan_id}").status_code, 200)
+        # Analyst can now download their own PDF report
+        self.assertEqual(self.client.get(f"/scans/{self.scan_id}/report.pdf").status_code, 200)
+        # Analyst can delete their own scan
+        self.assertEqual(self.client.post(f"/scans/{self.scan_id}/delete").status_code, 302)
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(EmailScan, self.scan_id))
+
+    def test_admin_can_manage_roles_and_view_audit_logs(self):
+        self._login_as(self.admin_id, "Admin")
+        self.assertEqual(self.client.get("/admin/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/users").status_code, 200)
+
+        response = self.client.post(
+            f"/admin/users/{self.normal_user_id}/role",
+            data={"role": User.ROLE_USER},
+        )
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            user = db.session.get(User, self.normal_user_id)
+            self.assertEqual(user.role, User.ROLE_USER)
+            event = db.session.scalar(db.select(SystemLog).where(SystemLog.event == "user_role_changed"))
+            self.assertIsNotNone(event)
+
+        self.assertEqual(self.client.get("/admin/logs").status_code, 200)
+
+    def test_admin_user_data_isolation(self):
+        with self.app.app_context():
+            admin2 = User(username="Admin2", email="admin2@example.com", password="unused", role=User.ROLE_ADMIN)
+            admin3 = User(username="Admin3", email="admin3@example.com", password="unused", role=User.ROLE_ADMIN)
+            db.session.add_all([admin2, admin3])
+            db.session.flush()
+
+            scan1 = EmailScan(user_id=self.admin_id, sender="s1@ex.com", receiver="r@ex.com", subject="Admin 1 Confidential Scan", risk_score=10, verdict="Low Risk")
+            scan2 = EmailScan(user_id=admin2.id, sender="s2@ex.com", receiver="r@ex.com", subject="Admin 2 Secret Scan", risk_score=50, verdict="Medium Risk")
+            scan3 = EmailScan(user_id=admin3.id, sender="s3@ex.com", receiver="r@ex.com", subject="Admin 3 Private Scan", risk_score=90, verdict="High Risk")
+            db.session.add_all([scan1, scan2, scan3])
+            db.session.commit()
+            scan1_id, scan2_id, scan3_id = scan1.id, scan2.id, scan3.id
+            admin2_id, admin3_id = admin2.id, admin3.id
+
+        # 1. Login as Admin 1
+        self._login_as(self.admin_id, "Admin")
+        hist1 = self.client.get("/history").data
+        self.assertIn(b"Admin 1 Confidential Scan", hist1)
+        self.assertNotIn(b"Admin 2 Secret Scan", hist1)
+        self.assertNotIn(b"Admin 3 Private Scan", hist1)
+        self.assertEqual(self.client.get(f"/scans/{scan2_id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/scans/{scan3_id}").status_code, 404)
+
+        # 2. Login as Admin 2
+        self._login_as(admin2_id, "Admin2")
+        hist2 = self.client.get("/history").data
+        self.assertIn(b"Admin 2 Secret Scan", hist2)
+        self.assertNotIn(b"Admin 1 Confidential Scan", hist2)
+        self.assertNotIn(b"Admin 3 Private Scan", hist2)
+        self.assertEqual(self.client.get(f"/scans/{scan1_id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/scans/{scan3_id}").status_code, 404)
+
+        # 3. Login as Admin 3
+        self._login_as(admin3_id, "Admin3")
+        hist3 = self.client.get("/history").data
+        self.assertIn(b"Admin 3 Private Scan", hist3)
+        self.assertNotIn(b"Admin 1 Confidential Scan", hist3)
+        self.assertNotIn(b"Admin 2 Secret Scan", hist3)
+        self.assertEqual(self.client.get(f"/scans/{scan1_id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/scans/{scan2_id}").status_code, 404)
+
+    def test_admin_create_user_view_renders_template(self):
+        """Verify that GET /admin/users/create renders successfully (admin_user_create.html)."""
+        self._login_as(self.admin_id, "Admin")
+        response = self.client.get("/admin/users/create")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Provision New Staff Account", response.data)
+        self.assertIn(b"guardly-password-input", response.data)
+
+
+if __name__ == "__main__":
+    unittest.main()

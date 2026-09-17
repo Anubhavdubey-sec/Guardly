@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ case.title }} · Guardly{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="soc-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <p class="eyebrow mb-1 text-primary fw-bold font-mono"><i class="bi bi-briefcase-fill me-1"></i> CASE #{{ case.id }}</p>
+                <h1 class="h2 fw-bold text-white mb-1">{{ case.title }}</h1>
+                <p class="text-muted small mb-0">Created by {{ case.created_by.username if case.created_by else 'Archived user' }} · Updated {{ case.updated_at.strftime('%d %b %Y, %H:%M UTC') }}</p>
+            </div>
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('cases.list_cases') }}"><i class="bi bi-arrow-left me-1"></i> All cases</a>
+        </div>
+    </div>
+
+    {% if case.status == 'Closed' %}
+    <div class="soc-alert soc-alert-info d-flex align-items-center gap-2 mb-4" role="status">
+        <i class="bi bi-lock-fill fs-5"></i><span>This case is closed. Reopen it before adding notes, scans, or indicators.</span>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="soc-card p-4 mb-4">
+                <div class="card-section-header mb-3"><div><p class="eyebrow mb-1"><i class="bi bi-pencil-square me-1"></i> TRIAGE WORKFLOW</p><h2 class="soc-card-title fs-5">Case details</h2></div><span class="badge {{ 'bg-success' if case.status == 'Closed' else 'bg-danger' if case.status == 'Open' else 'bg-warning text-dark' if case.status == 'Investigating' else 'bg-info text-dark' }}">{{ case.status }}</span></div>
+                {% if case.status == 'Closed' %}
+                    <p class="text-muted mb-3">This record is read-only while closed. Reopen it to make workflow changes.</p>
+                    <form method="post" action="{{ url_for('cases.update_case', case_id=case.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="title" value="{{ case.title }}">
+                        <input type="hidden" name="assigned_to_id" value="{{ case.assigned_to_id or '' }}">
+                        <input type="hidden" name="tags" value="{{ case.tags_list|join(', ') }}">
+                        <input type="hidden" name="verdict_override" value="{{ case.verdict_override or '' }}">
+                        <input type="hidden" name="status" value="Investigating">
+                        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-unlock me-1"></i> Reopen case</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ url_for('cases.update_case', case_id=case.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="row g-3">
+                            <div class="col-12"><label class="form-label" for="case-title">Case title</label><input id="case-title" class="form-control" name="title" value="{{ case.title }}" maxlength="180" required></div>
+                            <div class="col-md-4"><label class="form-label" for="case-status">Status</label><select id="case-status" class="form-select" name="status">{% for status in statuses %}<option value="{{ status }}" {% if case.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></div>
+                            <div class="col-md-4"><label class="form-label" for="case-assignee">Assignee</label><select id="case-assignee" class="form-select" name="assigned_to_id">{% if can_unassign %}<option value="">Unassigned</option>{% endif %}{% for staff_member in staff_members %}<option value="{{ staff_member.id }}" {% if case.assigned_to_id == staff_member.id %}selected{% endif %}>{{ staff_member.username }} · {{ staff_member.role|title }}</option>{% endfor %}</select></div>
+                            <div class="col-md-4"><label class="form-label" for="case-verdict">Verdict override</label><select id="case-verdict" class="form-select" name="verdict_override">{% for verdict in verdict_overrides %}<option value="{{ verdict }}" {% if case.verdict_override == verdict %}selected{% endif %}>{{ verdict or 'No override' }}</option>{% endfor %}</select></div>
+                            <div class="col-12"><label class="form-label" for="case-tags">Tags</label><input id="case-tags" class="form-control" name="tags" value="{{ case.tags_list|join(', ') }}" maxlength="409" placeholder="credential-theft, vip, urgent"></div>
+                        </div>
+                        <button class="btn btn-primary mt-3" type="submit"><i class="bi bi-check2 me-1"></i> Save case</button>
+                    </form>
+                {% endif %}
+            </section>
+
+            <section class="soc-card p-4 mb-4">
+                <div class="card-section-header mb-3"><div><p class="eyebrow mb-1"><i class="bi bi-chat-square-text me-1"></i> ANALYST TIMELINE</p><h2 class="soc-card-title fs-5">Notes</h2></div><span class="badge bg-dark border border-secondary text-muted font-mono">{{ case.notes|length }} NOTE{% if case.notes|length != 1 %}S{% endif %}</span></div>
+                {% if case.analyst_notes %}<div class="border-start border-secondary border-3 ps-3 mb-3"><p class="small text-muted text-uppercase font-mono mb-1">Legacy case summary</p><p class="mb-0 text-break">{{ case.analyst_notes }}</p></div>{% endif %}
+                {% if case.notes %}<div class="d-grid gap-3 mb-3">{% for note in case.notes %}<article class="border-start border-primary border-3 ps-3"><div class="d-flex flex-wrap justify-content-between gap-2 mb-1"><strong class="text-white">{{ note.author.username if note.author else 'Archived user' }}</strong><time class="small text-muted font-mono" datetime="{{ note.created_at.isoformat() }}">{{ note.created_at.strftime('%d %b %Y, %H:%M UTC') }}</time></div><p class="mb-0 text-break">{{ note.body }}</p></article>{% endfor %}</div>{% else %}<p class="text-muted">No analyst notes have been added yet.</p>{% endif %}
+                {% if case.status != 'Closed' %}<form method="post" action="{{ url_for('cases.add_case_note', case_id=case.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="form-label" for="case-note">Add analyst note</label><textarea id="case-note" class="form-control" name="body" rows="4" maxlength="8000" required placeholder="Record a decision, containment action, or finding."></textarea><button class="btn btn-outline-primary mt-3" type="submit"><i class="bi bi-plus-lg me-1"></i> Add note</button></form>{% endif %}
+            </section>
+
+            <section class="soc-card p-4">
+                <div class="card-section-header mb-3"><div><p class="eyebrow mb-1"><i class="bi bi-envelope-paper me-1"></i> LINKED EVIDENCE</p><h2 class="soc-card-title fs-5">Scans</h2></div><span class="badge bg-dark border border-secondary text-muted font-mono">{{ case.scan_links|length }} LINKED</span></div>
+                {% if case.scan_links %}<div class="table-responsive"><table class="table table-dark table-hover align-middle mb-3 soc-table"><thead><tr><th>REPORT</th><th>VERDICT</th><th>SCORE</th>{% if case.status != 'Closed' %}<th class="text-end">ACTION</th>{% endif %}</tr></thead><tbody>{% for link in case.scan_links %}{% if link.scan %}<tr><td><a class="text-white text-decoration-none table-link" href="{{ url_for('scanner.view_scan', scan_id=link.scan.id) }}">#{{ link.scan.id }} · {{ link.scan.subject or 'Untitled message' }}</a><div class="small text-muted font-mono">{{ link.scan.sender or 'Unknown sender' }}</div></td><td>{{ link.scan.verdict }}</td><td class="font-mono">{{ link.scan.risk_score }}</td>{% if case.status != 'Closed' %}<td class="text-end"><form method="post" action="{{ url_for('cases.unlink_case_scan', case_id=case.id, scan_id=link.scan.id) }}" onsubmit="return confirm('Unlink scan #{{ link.scan.id }} from this case?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="Unlink scan #{{ link.scan.id }}" title="Unlink scan"><i class="bi bi-x-lg" aria-hidden="true"></i></button></form></td>{% endif %}</tr>{% endif %}{% endfor %}</tbody></table></div>{% else %}<p class="text-muted mb-3">No scans are linked to this case yet.</p>{% endif %}
+                {% if available_scans and case.status != 'Closed' %}<form method="post" action="{{ url_for('cases.add_case_scan', case_id=case.id) }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="col-md-9"><label class="visually-hidden" for="case-scan">Link an accessible scan</label><select id="case-scan" class="form-select" name="scan_id" required><option value="">Link an accessible scan…</option>{% for scan in available_scans %}<option value="{{ scan.id }}">#{{ scan.id }} · {{ scan.verdict }} · {{ scan.subject or 'Untitled message' }}</option>{% endfor %}</select></div><div class="col-md-3"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-link-45deg me-1"></i> Link scan</button></div></form>{% endif %}
+            </section>
+        </div>
+
+        <div class="col-lg-5">
+            <section class="soc-card p-4 mb-4">
+                <div class="card-section-header mb-3"><div><p class="eyebrow mb-1"><i class="bi bi-fingerprint me-1"></i> IOC INVENTORY</p><h2 class="soc-card-title fs-5">Linked indicators</h2></div><span class="badge bg-dark border border-secondary text-muted font-mono">{{ case.indicators|length }} IOCs</span></div>
+                {% if case.indicators %}<div class="table-responsive"><table class="table table-dark table-sm align-middle mb-3 soc-table"><thead><tr><th>TYPE</th><th>VALUE</th>{% if case.status != 'Closed' %}<th></th>{% endif %}</tr></thead><tbody>{% for indicator in case.indicators %}<tr><td><span class="badge bg-secondary-subtle text-light font-mono">{{ indicator.indicator_type|replace('_', ' ') }}</span></td><td class="font-mono small text-break">{{ indicator.value }}{% if indicator.source_scan_id %}<div class="text-muted">Derived from #{{ indicator.source_scan_id }}</div>{% endif %}</td>{% if case.status != 'Closed' %}<td class="text-end">{% if indicator.source == 'analyst' %}<form method="post" action="{{ url_for('cases.remove_case_indicator', case_id=case.id, indicator_id=indicator.id) }}" onsubmit="return confirm('Remove this analyst-added indicator?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="Remove {{ indicator.indicator_type|replace('_', ' ') }} indicator {{ indicator.value }}" title="Remove indicator"><i class="bi bi-x-lg" aria-hidden="true"></i></button></form>{% endif %}</td>{% endif %}</tr>{% endfor %}</tbody></table></div>{% else %}<p class="text-muted">Link a scan or add an indicator to build this case's IOC inventory.</p>{% endif %}
+                {% if case.status != 'Closed' %}<form method="post" action="{{ url_for('cases.add_case_indicator', case_id=case.id) }}" class="row g-2 border-top border-secondary border-opacity-25 pt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="col-sm-4"><label class="visually-hidden" for="indicator-type">Indicator type</label><select id="indicator-type" class="form-select" name="indicator_type">{% for indicator_type in ('domain', 'ip_address', 'url', 'hash', 'other') %}<option value="{{ indicator_type }}">{{ indicator_type|replace('_', ' ')|title }}</option>{% endfor %}</select></div><div class="col-sm-8"><label class="visually-hidden" for="indicator-value">Indicator value</label><input id="indicator-value" class="form-control" name="value" maxlength="512" required placeholder="Add a manual IOC"></div><div class="col-12"><p class="form-text mb-2">Domains, IPs, URLs, and hashes are validated and normalized before saving.</p><button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-plus-lg me-1"></i> Add indicator</button></div></form>{% endif %}
+            </section>
+
+            <section class="soc-card p-4"><p class="eyebrow mb-2"><i class="bi bi-person-check me-1"></i> ACCOUNTABILITY</p><dl class="row small mb-0"><dt class="col-5 text-muted">Assigned to</dt><dd class="col-7 text-white">{{ case.assigned_to.username if case.assigned_to else 'Unassigned' }}</dd><dt class="col-5 text-muted">Verdict</dt><dd class="col-7 text-white">{{ case.effective_verdict }}</dd><dt class="col-5 text-muted">Created</dt><dd class="col-7 text-white">{{ case.created_at.strftime('%d %b %Y') }}</dd></dl></section>
+        </div>
+    </div>
+</div>
+{% endblock %}

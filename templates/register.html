@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account · Guardly{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper py-4 py-md-5 d-flex align-items-center justify-content-center">
+    <div class="auth-card mx-auto p-4 p-md-5 rounded-4 shadow-lg border border-secondary border-opacity-25" style="max-width: 480px; width: 100%; box-sizing: border-box;">
+        <div class="text-center mb-4">
+            <div class="auth-brand-orb mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);">
+                <i class="bi bi-person-plus-fill text-info display-6"></i>
+            </div>
+            <h1 class="h4 fw-bold text-white mb-1">Create Your Account</h1>
+            <p class="text-muted small mb-0 font-mono">SECURE PERSONAL EMAIL THREAT DETECTION</p>
+        </div>
+
+        {% if error %}
+            <div class="soc-alert soc-alert-danger mb-4 d-flex align-items-center gap-2" role="alert">
+                <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                <span>{{ error }}</span>
+            </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('auth.register') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label for="username" class="form-label text-muted small font-mono">Username</label>
+                <div class="position-relative">
+                    <i class="bi bi-person position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
+                    <input type="text" id="username" name="username" value="{{ username or '' }}" class="form-control ps-5 font-mono" placeholder="johndoe" minlength="3" maxlength="80" required autocomplete="username">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label text-muted small font-mono">Email Address</label>
+                <div class="position-relative">
+                    <i class="bi bi-envelope position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
+                    <input type="email" id="email" name="email" value="{{ email or '' }}" class="form-control ps-5 font-mono" placeholder="you@example.com" maxlength="120" required autocomplete="email">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label text-muted small font-mono">Password (min. 12 chars)</label>
+                <div class="position-relative">
+                    <i class="bi bi-key position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
+                    <input type="password" id="password" name="password" class="form-control ps-5 font-mono guardly-password-input" placeholder="••••••••••••" minlength="12" maxlength="128" required autocomplete="new-password">
+                </div>
+                <div id="password-strength-container" class="mt-2"></div>
+            </div>
+
+            <div class="mb-4">
+                <label for="confirm_password" class="form-label text-muted small font-mono">Confirm Password</label>
+                <div class="position-relative">
+                    <i class="bi bi-check2-circle position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control ps-5 font-mono" placeholder="••••••••••••" minlength="12" maxlength="128" required autocomplete="new-password">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">
+                <i class="bi bi-shield-lock me-1"></i> Register Free Account
+            </button>
+        </form>
+
+        <p class="text-center mt-3 text-muted small">
+            Already have an account? <a href="{{ url_for('auth.login') }}" class="text-info">Sign in</a>
+        </p>
+
+        <div class="mt-4 pt-3 border-top border-secondary border-opacity-20 text-center">
+            <p class="text-muted small mb-0"><i class="bi bi-info-circle text-info me-1"></i> Just need a quick scan? No account needed. <a href="{{ url_for('scanner.upload') }}" class="text-info text-decoration-none fw-semibold">Open Scanner</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+.venv/
+venv/
+env/
+
+# ==============================
+# Environment / secrets
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+# ==============================
+# Databases
+# ==============================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# ==============================
+# Runtime data
+# ==============================
+
+received_emails/*
+!received_emails/.gitkeep
+
+extracted_attachments/*
+!extracted_attachments/.gitkeep
+
+quarantine/*
+!quarantine/.gitkeep
+
+uploads/*
+!uploads/.gitkeep
+
+tmp/*
+!tmp/.gitkeep
+
+instance/*
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+logs/
+
+# ==============================
+# Generated reports
+# ==============================
+
+reports/
+generated_reports/
+
+# ==============================
+# Build artifacts
+# ==============================
+
+dist/
+build/
+*.zip
+*.tar.gz
+
+# ==============================
+# Test artifacts
+# ==============================
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==============================
+# IDE
+# ==============================
+
+.vscode/
+.idea/
+
+# ==============================
+# OS
+# ==============================
+
+.DS_Store
+Thumbs.db

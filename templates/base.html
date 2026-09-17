@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Guardly - Offline Enterprise Email Investigation Platform{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/glass-theme.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme');
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+                document.documentElement.classList.add('light-mode');
+            } else {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                document.documentElement.classList.remove('light-mode');
+            }
+        })();
+    </script>
+</head>
+<body class="soc-body">
+    <!-- Ambient Animated Aurora Wallpaper -->
+    <div class="ambient-wallpaper-container" aria-hidden="true">
+        <div class="aurora-orb aurora-1"></div>
+        <div class="aurora-orb aurora-2"></div>
+        <div class="aurora-orb aurora-3"></div>
+        <div class="wallpaper-noise"></div>
+        <div class="wallpaper-vignette"></div>
+    </div>
+
+    <!-- Initial Page Open Animated Logo Splash Screen -->
+    <div id="guardlySplash" class="splash-screen-overlay" aria-hidden="true">
+        <div class="splash-content text-center">
+            <div class="splash-logo-wrapper mb-3">
+                <div class="splash-radar-ring"></div>
+                <div class="splash-shield-orb d-flex align-items-center justify-content-center">
+                    <svg class="guardly-soldier-svg" width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="soldierGoldSplash" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#FBBF24"/>
+                          <stop offset="50%" stop-color="#F59E0B"/>
+                          <stop offset="100%" stop-color="#B45309"/>
+                        </linearGradient>
+                        <linearGradient id="soldierBlueSplash" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#2563EB"/>
+                          <stop offset="100%" stop-color="#1E3A8A"/>
+                        </linearGradient>
+                      </defs>
+                      <g id="figure" class="guardly-anim-figure">
+                        <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldSplash)"/>
+                        <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueSplash)" stroke="url(#soldierGoldSplash)" stroke-width="1.2"/>
+                        <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                      </g>
+                      <g id="shield" class="guardly-anim-shield">
+                        <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueSplash)" stroke="url(#soldierGoldSplash)" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldSplash)" stroke-width="1" opacity="0.6"/>
+                      </g>
+                      <g id="sword" class="guardly-anim-sword">
+                        <path d="M14 26H26" stroke="url(#soldierGoldSplash)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round" class="guardly-glint-path"/>
+                      </g>
+                    </svg>
+                </div>
+            </div>
+            <h1 class="splash-brand-title font-mono fw-bold mb-3">Guardly</h1>
+            <div class="splash-progress-bar mx-auto">
+                <div class="splash-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="soc-layout">
+        {% if current_user %}
+            {% include "partials/sidebar.html" %}
+            <div class="soc-main-wrapper">
+                {% include "partials/topbar.html" %}
+                <main id="main-content" class="soc-content page-container py-4">
+        {% else %}
+            <div class="public-wrapper w-100">
+                <header class="public-navbar">
+                    <div class="public-nav-inner d-flex align-items-center justify-content-between page-container">
+                        <a href="{{ url_for('scanner.upload') }}" class="brand-logo text-decoration-none d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
+                            <div class="brand-icon-wrapper flex-shrink-0">
+                                <svg class="pg-logo-svg" width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <defs>
+                                    <linearGradient id="soldierGoldNav" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                      <stop offset="0%" stop-color="#FBBF24"/>
+                                      <stop offset="50%" stop-color="#F59E0B"/>
+                                      <stop offset="100%" stop-color="#B45309"/>
+                                    </linearGradient>
+                                    <linearGradient id="soldierBlueNav" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                      <stop offset="0%" stop-color="#2563EB"/>
+                                      <stop offset="100%" stop-color="#1E3A8A"/>
+                                    </linearGradient>
+                                  </defs>
+                                  <g id="figure">
+                                    <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldNav)"/>
+                                    <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueNav)" stroke="url(#soldierGoldNav)" stroke-width="1.2"/>
+                                    <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                                  </g>
+                                  <g id="shield">
+                                    <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueNav)" stroke="url(#soldierGoldNav)" stroke-width="1.5" stroke-linejoin="round"/>
+                                    <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldNav)" stroke-width="1" opacity="0.6"/>
+                                  </g>
+                                  <g id="sword">
+                                    <path d="M14 26H26" stroke="url(#soldierGoldNav)" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
+                                  </g>
+                                </svg>
+                            </div>
+                            <span class="fw-bold text-white fs-5 text-nowrap">Guardly <span class="badge bg-primary-subtle text-primary font-mono ms-1 d-none d-sm-inline-block" style="font-size: 0.65rem; letter-spacing: 0.08em;">LOCAL ANALYSIS ENGINE</span></span>
+                        </a>
+                        <div class="public-nav-actions d-flex align-items-center gap-2">
+                            <a href="{{ url_for('scanner.upload') }}" class="public-scan-action btn btn-sm btn-outline-light"><i class="bi bi-radar me-1"></i> Scan Email</a>
+                            {% if current_user %}
+                                <a href="{{ url_for('auth.dashboard') }}" class="btn btn-sm btn-outline-light">Dashboard</a>
+                            {% else %}
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-light">Sign In</a>
+                                <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-primary">Register</a>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-light theme-toggle-btn ms-1" type="button" title="Switch Theme" aria-label="Toggle theme">
+                                <i class="bi bi-sun-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+                <main id="main-content" class="public-content page-container py-4">
+        {% endif %}
+
+        {% include "partials/flash_messages.html" %}
+        {% block content %}{% endblock %}
+
+        </main>
+        {% if current_user %}
+            </div>
+        {% else %}
+            <footer class="public-footer py-3">
+                <div class="d-flex justify-content-between gap-3 page-container">
+                    <span><i class="bi bi-shield-lock me-1"></i> Guardly Email Defense</span>
+                    <span>Uploaded files are removed after analysis.</span>
+                </div>
+            </footer>
+            </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('sidebarToggle');
+            const collapseToggle = document.getElementById('sidebarCollapse');
+            const sidebar = document.getElementById('socSidebar');
+            
+            const applyTheme = (theme) => {
+                {% if current_user %}
+                    document.body.classList.remove('light-mode');
+                    document.documentElement.classList.remove('light-mode');
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    return;
+                {% endif %}
+                const isLight = theme === 'light';
+                document.body.classList.toggle('light-mode', isLight);
+                document.documentElement.classList.toggle('light-mode', isLight);
+                document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
+                localStorage.setItem('guardly-theme', isLight ? 'light' : 'dark');
+
+                document.querySelectorAll('#themeToggle, .theme-toggle-btn').forEach(btn => {
+                    btn.setAttribute('aria-pressed', String(isLight));
+                    btn.setAttribute('title', isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isLight ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+                    }
+                });
+            };
+
+            const setSidebarState = (collapsed) => {
+                document.body.classList.toggle('sidebar-collapsed', collapsed);
+                if (collapseToggle) {
+                    collapseToggle.setAttribute('aria-expanded', String(!collapsed));
+                    collapseToggle.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+                    const icon = collapseToggle.querySelector('i');
+                    if (icon) {
+                        icon.className = collapsed ? 'bi bi-layout-sidebar-inset-reverse' : 'bi bi-layout-sidebar-inset';
+                    }
+                }
+                localStorage.setItem('guardly-sidebar-collapsed', String(collapsed));
+            };
+
+            if ((localStorage.getItem('guardly-sidebar-collapsed') === 'true' || localStorage.getItem('phishguard-sidebar-collapsed') === 'true') && window.innerWidth >= 992) {
+                setSidebarState(true);
+            }
+            collapseToggle?.addEventListener('click', () => setSidebarState(!document.body.classList.contains('sidebar-collapsed')));
+
+            const closeBtn = document.getElementById('sidebarCloseBtn');
+            let backdrop = document.getElementById('sidebarBackdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'sidebarBackdrop';
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+            }
+
+            const closeSidebar = () => {
+                sidebar?.classList.remove('show');
+                backdrop?.classList.remove('show');
+            };
+
+            if (toggle && sidebar) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show', Boolean(isOpen));
+                });
+            }
+
+            closeBtn?.addEventListener('click', closeSidebar);
+            backdrop?.addEventListener('click', closeSidebar);
+
+            const currentSavedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme') || 'dark';
+            applyTheme(currentSavedTheme);
+
+            const globalSearch = document.getElementById('globalSearch');
+            document.addEventListener('keydown', (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && globalSearch) {
+                    event.preventDefault();
+                    globalSearch.focus();
+                    globalSearch.select();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('#themeToggle, .theme-toggle-btn');
+                if (btn) {
+                    const isNowLight = document.body.classList.contains('light-mode');
+                    const nextTheme = isNowLight ? 'dark' : 'light';
+                    applyTheme(nextTheme);
+                }
+            });
+
+            // Smooth animated logo splash dismiss once per session (prevents navigation jitter in Chrome)
+            const splash = document.getElementById('guardlySplash') || document.getElementById('phishguardSplash');
+            if (splash) {
+                if (sessionStorage.getItem('guardly_splash_shown')) {
+                    splash.style.display = 'none';
+                    splash.remove();
+                } else {
+                    sessionStorage.setItem('guardly_splash_shown', 'true');
+                    setTimeout(() => {
+                        splash.classList.add('fade-out');
+                        setTimeout(() => {
+                            splash.style.display = 'none';
+                            splash.remove();
+                        }, 250);
+                    }, 300);
+                }
+            }
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/password_strength.js') }}"></script>
+</body>
+</html>

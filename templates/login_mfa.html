@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Two-Factor Authentication · Guardly{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper py-4 py-md-5 d-flex align-items-center justify-content-center">
+    <div class="auth-card mx-auto p-4 p-md-5 rounded-4 shadow-lg border border-secondary border-opacity-25" style="max-width: 440px; width: 100%; box-sizing: border-box;">
+        <div class="text-center mb-4">
+            <div class="auth-brand-orb mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);">
+                <i class="bi bi-shield-check text-info display-6"></i>
+            </div>
+            <h1 class="h4 fw-bold text-white mb-1">Two-Factor Authentication</h1>
+            <p class="text-muted small mb-0 font-mono">ENTER YOUR AUTHENTICATION OR RECOVERY CODE</p>
+        </div>
+
+        {% if error %}
+            <div class="soc-alert soc-alert-danger mb-4 d-flex align-items-center gap-2" role="alert">
+                <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                <span>{{ error }}</span>
+            </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('auth.login_mfa') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-4">
+                <label for="otp" class="form-label text-muted small font-mono">6-Digit Code / Recovery Code</label>
+                <div class="position-relative">
+                    <i class="bi bi-key position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
+                    <input type="text" id="otp" name="otp" class="form-control ps-5 font-mono text-center fs-4 letter-spacing-2" placeholder="123456" autofocus required autocomplete="one-time-code">
+                </div>
+                <div class="form-text text-muted small mt-2">
+                    Enter the code from your authenticator app (Google Authenticator, Microsoft Authenticator, etc.) or an emergency recovery code.
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">
+                <i class="bi bi-check2-shield me-1"></i> Verify &amp; Sign In
+            </button>
+        </form>
+
+        <p class="text-center mt-3 text-muted small">
+            <a href="{{ url_for('auth.login') }}" class="text-muted text-decoration-none"><i class="bi bi-arrow-left me-1"></i> Back to sign in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
