@@ -105,7 +105,7 @@ def login():
             except Exception:
                 db.session.rollback()
             flash("This account has been deactivated. Please contact an administrator.", "danger")
-            return render_template("login.html"), 403
+            return redirect(url_for("auth.login"))
 
         if user and check_password_hash(user.password, password):
             # MFA Enforcement: If MFA is enabled, require second factor verification
@@ -126,7 +126,7 @@ def login():
                     db.session.rollback()
                 return redirect(url_for("auth.login_mfa"))
 
-            # Standard successful authentication
+            # Standard successful authentication — PRG pattern
             session.clear()
             session["user_id"] = user.id
             session["username"] = user.username
@@ -139,12 +139,14 @@ def login():
             flash(f"Welcome back, {user.username}!", "success")
             return redirect(url_for("auth.dashboard"))
 
+        # Invalid credentials — always audit and use PRG to prevent browser resubmit
         record_event("login_failed", target_type="auth", detail="Invalid login attempt.", actor_name="Unknown")
         try:
             db.session.commit()
         except Exception:
             db.session.rollback()
         flash("Invalid email or password.", "danger")
+        return redirect(url_for("auth.login"))
 
     return render_template("login.html")
 
@@ -348,11 +350,105 @@ def account():
     return render_template("account.html", user=user, scans_count=scans_count)
 
 
+@auth_bp.route("/account/profile", methods=["POST"])
+@login_required
+def update_profile():
+    """Allows an authenticated user to update their personal username and email."""
+    user = g.current_user
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not username or not email:
+        flash("Username and email are required.", "danger")
+        return redirect(url_for("auth.account"))
+
+    if len(username) < 3 or len(username) > 80:
+        flash("Username must be between 3 and 80 characters.", "danger")
+        return redirect(url_for("auth.account"))
+
+    if not re.match(r"^[a-zA-Z0-9_\.\-]+$", username):
+        flash("Username may contain only letters, numbers, hyphens, periods, and underscores.", "danger")
+        return redirect(url_for("auth.account"))
+
+    if len(email) > 120 or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        flash("Please enter a valid email address.", "danger")
+        return redirect(url_for("auth.account"))
+
+    # Conflict check: ensure username and email are not taken by another user
+    existing_user = User.query.filter(
+        (User.id != user.id) & ((User.email == email) | (User.username == username))
+    ).first()
+    if existing_user:
+        flash("An account with that email or username already exists.", "danger")
+        return redirect(url_for("auth.account"))
+
+    old_username = user.username
+    user.username = username
+    user.email = email
+    session["username"] = username
+
+    record_event(
+        "profile_updated",
+        target_type="user",
+        target_id=user.id,
+        detail=f"User updated profile details (was: {old_username}).",
+        actor=user,
+    )
+    try:
+        db.session.commit()
+        flash("Your profile details have been updated successfully.", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Failed to update profile details. Please try again.", "danger")
+
+    return redirect(url_for("auth.account"))
+
+
+@auth_bp.route("/account/password", methods=["POST"])
+@login_required
+def account_change_password():
+    """Allows updating password directly from the account settings page."""
+    user = g.current_user
+    old_password = request.form.get("old_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not check_password_hash(user.password, old_password):
+        flash("Current password is incorrect.", "danger")
+        return redirect(url_for("auth.account"))
+
+    if new_password != confirm_password:
+        flash("New password and confirmation do not match.", "danger")
+        return redirect(url_for("auth.account"))
+
+    is_valid, errors, _strength = validate_password(new_password, username=user.username, email=user.email)
+    if not is_valid:
+        for err in errors:
+            flash(err, "danger")
+        return redirect(url_for("auth.account"))
+
+    user.password = generate_password_hash(new_password)
+    record_event("password_changed", target_type="user", target_id=user.id, detail="User changed password from account settings.", actor=user)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Failed to update password. Please try again.", "danger")
+        return redirect(url_for("auth.account"))
+
+    session.clear()
+    flash("Password updated successfully. Please sign in with your new password.", "success")
+    return redirect(url_for("auth.login"))
+
+
 @auth_bp.route("/account/mfa/setup", methods=["GET", "POST"])
 @login_required
 def mfa_setup():
     """Initializes MFA secret and presents authenticator URI / verification challenge."""
     user = g.current_user
+    scans_count = EmailScan.query.filter_by(user_id=user.id).count()
+
     if user.mfa_enabled:
         flash("MFA is already enabled on your account.", "info")
         return redirect(url_for("auth.account"))
@@ -382,14 +478,41 @@ def mfa_setup():
             return redirect(url_for("auth.account"))
 
         flash("Two-Factor Authentication is now enabled! Save your recovery codes in a safe place.", "success")
-        return render_template("account.html", user=user, recovery_codes=plain_recovery, show_recovery=True)
+        return render_template(
+            "account.html",
+            user=user,
+            recovery_codes=plain_recovery,
+            show_recovery=True,
+            scans_count=scans_count,
+        )
 
-    # GET: Generate temporary secret and show setup instructions
-    secret = generate_mfa_secret()
-    session["pending_mfa_secret"] = secret
+    # GET: Reuse pending secret if already generated to avoid invalidating user's authenticator entry on error, unless refresh requested
+    refresh = request.args.get("refresh") == "1"
+    secret = session.get("pending_mfa_secret")
+    if not secret or refresh:
+        secret = generate_mfa_secret()
+        session["pending_mfa_secret"] = secret
+
     totp_uri = get_totp_uri(secret, user.username)
 
-    return render_template("account.html", user=user, mfa_setup_secret=secret, totp_uri=totp_uri, show_setup=True)
+    return render_template(
+        "account.html",
+        user=user,
+        mfa_setup_secret=secret,
+        totp_uri=totp_uri,
+        show_setup=True,
+        scans_count=scans_count,
+    )
+
+
+@auth_bp.route("/account/mfa/cancel", methods=["GET", "POST"])
+@login_required
+def mfa_cancel():
+    """Cancels an in-progress MFA setup and cleans up temporary session state."""
+    session.pop("pending_mfa_secret", None)
+    flash("MFA setup was cancelled.", "info")
+    return redirect(url_for("auth.account"))
+
 
 
 @auth_bp.route("/account/mfa/disable", methods=["POST"])

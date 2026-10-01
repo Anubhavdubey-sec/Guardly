@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,7 +14,7 @@ class Config:
         os.getenv("TESTING", "False").lower() in ("true", "1", "t")
         or "pytest" in os.getenv("_", "")
         or "PYTEST_CURRENT_TEST" in os.environ
-        or any("pytest" in arg.lower() or "unittest" in arg.lower() for arg in os.sys.argv)
+        or any("pytest" in arg.lower() or "unittest" in arg.lower() for arg in sys.argv)
     )
     _debug = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
@@ -31,7 +32,7 @@ class Config:
     RATELIMIT_HEADERS_ENABLED = True
 
     # Secure Cookie & Session Settings
-    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", str(not (_debug or _testing))).lower() in ("true", "1", "t")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = 7200  # 2 Hours lifetime in seconds
@@ -43,6 +44,8 @@ class Config:
     # Database Configuration
     _db_url = os.getenv("DATABASE_URL")
     if _db_url:
+        if _db_url.startswith("postgres://"):
+            _db_url = _db_url.replace("postgres://", "postgresql://", 1)
         if _db_url.startswith("sqlite:///") and not os.path.isabs(_db_url.replace("sqlite:///", "")):
             rel_path = _db_url.replace("sqlite:///", "")
             abs_db_path = os.path.abspath(os.path.join(BASE_DIR, rel_path))
@@ -62,8 +65,8 @@ class Config:
     AUTO_CREATE_SCHEMA = _auto_create_env.lower() in ("true", "1", "t")
 
     # Tenant boundaries and public-scanner routing
-    DEFAULT_TENANT_ID = os.getenv("DEFAULT_TENANT_ID", "default").strip().lower()
-    PUBLIC_SCAN_TENANT_ID = os.getenv("PUBLIC_SCAN_TENANT_ID", DEFAULT_TENANT_ID).strip().lower()
+    DEFAULT_TENANT_ID = (os.getenv("DEFAULT_TENANT_ID") or "default").strip().lower()
+    PUBLIC_SCAN_TENANT_ID = (os.getenv("PUBLIC_SCAN_TENANT_ID") or DEFAULT_TENANT_ID).strip().lower()
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", DEFAULT_TENANT_ID):
         raise RuntimeError("DEFAULT_TENANT_ID must contain 1-64 lowercase letters, numbers, underscores, or hyphens.")
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", PUBLIC_SCAN_TENANT_ID):
@@ -72,46 +75,50 @@ class Config:
     # Authentication and evidence retention
     MFA_REQUIRED_FOR_STAFF = os.getenv("MFA_REQUIRED_FOR_STAFF", "False").lower() in ("true", "1", "t")
     MFA_ISSUER_NAME = os.getenv("MFA_ISSUER_NAME", "Guardly")
-    EVIDENCE_RETENTION_DAYS = int(os.getenv("EVIDENCE_RETENTION_DAYS", "90"))
+    EVIDENCE_RETENTION_DAYS = int(os.getenv("EVIDENCE_RETENTION_DAYS") or "90")
     if EVIDENCE_RETENTION_DAYS < 1:
         raise RuntimeError("EVIDENCE_RETENTION_DAYS must be at least one day.")
 
     # File Upload Configuration
-    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", os.path.join(BASE_DIR, "uploads"))
+    _upload_folder = os.getenv("UPLOAD_FOLDER") or os.path.join(BASE_DIR, "uploads")
+    if not os.path.isabs(_upload_folder):
+        UPLOAD_FOLDER = os.path.abspath(os.path.join(BASE_DIR, _upload_folder))
+    else:
+        UPLOAD_FOLDER = _upload_folder
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB limit
 
     # Public Lookup Configuration
-    PUBLIC_LOOKUPS_ENABLED = os.getenv("PUBLIC_LOOKUPS_ENABLED", "True").lower() in ("true", "1", "t")
-    PUBLIC_LOOKUP_TIMEOUT_SECONDS = int(os.getenv("PUBLIC_LOOKUP_TIMEOUT_SECONDS", "3"))
-    PUBLIC_LOOKUP_MAX_LOOKUPS = int(os.getenv("PUBLIC_LOOKUP_MAX_LOOKUPS", "5"))
+    PUBLIC_LOOKUPS_ENABLED = (os.getenv("PUBLIC_LOOKUPS_ENABLED") or "True").lower() in ("true", "1", "t")
+    PUBLIC_LOOKUP_TIMEOUT_SECONDS = int(os.getenv("PUBLIC_LOOKUP_TIMEOUT_SECONDS") or "3")
+    PUBLIC_LOOKUP_MAX_LOOKUPS = int(os.getenv("PUBLIC_LOOKUP_MAX_LOOKUPS") or "5")
 
     # Geolocation Subsystem Configuration
-    GEOLOCATION_CITY_PATH = os.getenv("GEOLOCATION_CITY_PATH", os.path.join(BASE_DIR, "data", "GeoLite2-City.mmdb"))
-    GEOLOCATION_ASN_PATH = os.getenv("GEOLOCATION_ASN_PATH", os.path.join(BASE_DIR, "data", "GeoLite2-ASN.mmdb"))
-    GEOLOCATION_CACHE_MAX_SIZE = int(os.getenv("GEOLOCATION_CACHE_MAX_SIZE", "10000"))
-    GEOLOCATION_CACHE_TTL = int(os.getenv("GEOLOCATION_CACHE_TTL", "3600"))
-    GEOLOCATION_CACHE_NEGATIVE_TTL = int(os.getenv("GEOLOCATION_CACHE_NEGATIVE_TTL", "300"))
-    GEOLOCATION_FALLBACK_ENABLED = os.getenv("GEOLOCATION_FALLBACK_ENABLED", "True").lower() in ("true", "1", "t")
-    GEOLOCATION_FALLBACK_PROVIDER = os.getenv("GEOLOCATION_FALLBACK_PROVIDER", "ip-api")
-    GEOLOCATION_FALLBACK_API_KEY = os.getenv("GEOLOCATION_FALLBACK_API_KEY", "")
-    GEOLOCATION_FALLBACK_TIMEOUT = float(os.getenv("GEOLOCATION_FALLBACK_TIMEOUT", "2.0"))
+    GEOLOCATION_CITY_PATH = os.getenv("GEOLOCATION_CITY_PATH") or os.path.join(BASE_DIR, "data", "GeoLite2-City.mmdb")
+    GEOLOCATION_ASN_PATH = os.getenv("GEOLOCATION_ASN_PATH") or os.path.join(BASE_DIR, "data", "GeoLite2-ASN.mmdb")
+    GEOLOCATION_CACHE_MAX_SIZE = int(os.getenv("GEOLOCATION_CACHE_MAX_SIZE") or "10000")
+    GEOLOCATION_CACHE_TTL = int(os.getenv("GEOLOCATION_CACHE_TTL") or "3600")
+    GEOLOCATION_CACHE_NEGATIVE_TTL = int(os.getenv("GEOLOCATION_CACHE_NEGATIVE_TTL") or "300")
+    GEOLOCATION_FALLBACK_ENABLED = (os.getenv("GEOLOCATION_FALLBACK_ENABLED") or "True").lower() in ("true", "1", "t")
+    GEOLOCATION_FALLBACK_PROVIDER = os.getenv("GEOLOCATION_FALLBACK_PROVIDER") or "ip-api"
+    GEOLOCATION_FALLBACK_API_KEY = os.getenv("GEOLOCATION_FALLBACK_API_KEY") or ""
+    GEOLOCATION_FALLBACK_TIMEOUT = float(os.getenv("GEOLOCATION_FALLBACK_TIMEOUT") or "2.0")
 
     # SMTP Receiver Configuration
-    SMTP_HOST = os.getenv("SMTP_HOST", "127.0.0.1")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", "2525"))
-    MAIL_STORAGE_PATH = os.getenv("MAIL_STORAGE_PATH", os.path.join(BASE_DIR, "received_emails"))
-    MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", str(10 * 1024 * 1024)))
+    SMTP_HOST = os.getenv("SMTP_HOST") or "127.0.0.1"
+    SMTP_PORT = int(os.getenv("SMTP_PORT") or "2525")
+    MAIL_STORAGE_PATH = os.getenv("MAIL_STORAGE_PATH") or os.path.join(BASE_DIR, "received_emails")
+    MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE") or str(10 * 1024 * 1024))
 
     # Consumer Analysis Safeguards & Limits
-    MAX_ATTACHMENTS = int(os.getenv("MAX_ATTACHMENTS", "20"))
-    MAX_URLS = int(os.getenv("MAX_URLS", "100"))
-    MAX_URL_LENGTH = int(os.getenv("MAX_URL_LENGTH", "2048"))
-    MAX_REDIRECTS = int(os.getenv("MAX_REDIRECTS", "5"))
-    MAX_SCAN_TIME = int(os.getenv("MAX_SCAN_TIME", "30"))
-    MAX_PDF_SIZE = int(os.getenv("MAX_PDF_SIZE", str(10 * 1024 * 1024)))
-    MAX_IMAGE_PIXELS = int(os.getenv("MAX_IMAGE_PIXELS", "25000000"))
-    SMTP_ENABLED = os.getenv("SMTP_ENABLED", "False").lower() in ("true", "1", "t")
-    GUEST_RETENTION_HOURS = int(os.getenv("GUEST_RETENTION_HOURS", "24"))
+    MAX_ATTACHMENTS = int(os.getenv("MAX_ATTACHMENTS") or "20")
+    MAX_URLS = int(os.getenv("MAX_URLS") or "100")
+    MAX_URL_LENGTH = int(os.getenv("MAX_URL_LENGTH") or "2048")
+    MAX_REDIRECTS = int(os.getenv("MAX_REDIRECTS") or "5")
+    MAX_SCAN_TIME = int(os.getenv("MAX_SCAN_TIME") or "30")
+    MAX_PDF_SIZE = int(os.getenv("MAX_PDF_SIZE") or str(10 * 1024 * 1024))
+    MAX_IMAGE_PIXELS = int(os.getenv("MAX_IMAGE_PIXELS") or "25000000")
+    SMTP_ENABLED = (os.getenv("SMTP_ENABLED") or "False").lower() in ("true", "1", "t")
+    GUEST_RETENTION_HOURS = int(os.getenv("GUEST_RETENTION_HOURS") or "24")
 
     # Debug Configuration
     DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")

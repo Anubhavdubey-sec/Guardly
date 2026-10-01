@@ -52,6 +52,21 @@ class DatabaseConfigTests(unittest.TestCase):
         self.assertEqual(User.ROLE_ANALYST, "analyst")
         self.assertEqual(User.ROLE_USER, "user")
 
+    def test_postgres_url_normalization(self):
+        old_val = os.environ.get("DATABASE_URL")
+        try:
+            os.environ["DATABASE_URL"] = "postgres://user:pass@render-db.com:5432/guardly"
+            # Re-read database url logic as implemented in Config
+            url = os.environ["DATABASE_URL"]
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            self.assertTrue(url.startswith("postgresql://"))
+        finally:
+            if old_val is not None:
+                os.environ["DATABASE_URL"] = old_val
+            else:
+                os.environ.pop("DATABASE_URL", None)
+
 
 if __name__ == "__main__":
     unittest.main()

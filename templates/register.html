@@ -5,69 +5,201 @@
 {% block content %}
 <div class="auth-wrapper py-4 py-md-5 d-flex align-items-center justify-content-center">
     <div class="auth-card mx-auto p-4 p-md-5 rounded-4 shadow-lg border border-secondary border-opacity-25" style="max-width: 480px; width: 100%; box-sizing: border-box;">
+
+        <!-- Brand Header -->
         <div class="text-center mb-4">
-            <div class="auth-brand-orb mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-radius: 50%; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);">
-                <i class="bi bi-person-plus-fill text-info display-6"></i>
+            <div class="auth-brand-orb mx-auto mb-3 d-flex align-items-center justify-content-center"
+                 style="width: 72px; height: 72px; border-radius: 50%; background: rgba(59,130,246,0.12); border: 1px solid rgba(245,158,11,0.35); box-shadow: 0 8px 24px rgba(37,99,235,0.25);">
+                <i class="bi bi-person-plus-fill text-info" style="font-size: 2rem;"></i>
             </div>
             <h1 class="h4 fw-bold text-white mb-1">Create Your Account</h1>
             <p class="text-muted small mb-0 font-mono">SECURE PERSONAL EMAIL THREAT DETECTION</p>
         </div>
 
-        {% if error %}
-            <div class="soc-alert soc-alert-danger mb-4 d-flex align-items-center gap-2" role="alert">
-                <i class="bi bi-exclamation-octagon-fill fs-5"></i>
-                <span>{{ error }}</span>
-            </div>
-        {% endif %}
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show d-flex align-items-center gap-2 py-2 mb-3" role="alert">
+                        <i class="bi bi-{% if category == 'danger' or category == 'error' %}exclamation-octagon-fill{% elif category == 'success' %}check-circle-fill{% elif category == 'warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %} flex-shrink-0"></i>
+                        <span>{{ message }}</span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-        <form method="post" action="{{ url_for('auth.register') }}">
+        <!-- Registration Form -->
+        <form method="post" action="{{ url_for('auth.register') }}" id="registerForm" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+            <!-- Username -->
             <div class="mb-3">
-                <label for="username" class="form-label text-muted small font-mono">Username</label>
+                <label for="username" class="form-label text-muted small fw-semibold">Username</label>
                 <div class="position-relative">
-                    <i class="bi bi-person position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
-                    <input type="text" id="username" name="username" value="{{ username or '' }}" class="form-control ps-5 font-mono" placeholder="johndoe" minlength="3" maxlength="80" required autocomplete="username">
+                    <i class="bi bi-person position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;z-index:5;"></i>
+                    <input type="text" id="username" name="username"
+                           value="{{ username or request.form.get('username', '') }}"
+                           class="form-control ps-5"
+                           placeholder="johndoe"
+                           minlength="3" maxlength="80"
+                           pattern="[a-zA-Z0-9_.\-]+"
+                           required
+                           autocomplete="username"
+                           spellcheck="false">
+                    <div class="invalid-feedback">Username must be 3–80 characters (letters, numbers, hyphens, periods, underscores).</div>
+                </div>
+                <div class="form-text text-muted" style="font-size:0.75rem;">Letters, numbers, hyphens, periods, and underscores only.</div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label for="email" class="form-label text-muted small fw-semibold">Email Address</label>
+                <div class="position-relative">
+                    <i class="bi bi-envelope position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;z-index:5;"></i>
+                    <input type="email" id="email" name="email"
+                           value="{{ email or request.form.get('email', '') }}"
+                           class="form-control ps-5"
+                           placeholder="you@example.com"
+                           maxlength="120"
+                           required
+                           autocomplete="email"
+                           inputmode="email">
+                    <div class="invalid-feedback">Please enter a valid email address.</div>
                 </div>
             </div>
 
+            <!-- Password with show/hide toggle -->
             <div class="mb-3">
-                <label for="email" class="form-label text-muted small font-mono">Email Address</label>
+                <label for="password" class="form-label text-muted small fw-semibold">Password <span class="text-muted">(min. 12 characters)</span></label>
                 <div class="position-relative">
-                    <i class="bi bi-envelope position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
-                    <input type="email" id="email" name="email" value="{{ email or '' }}" class="form-control ps-5 font-mono" placeholder="you@example.com" maxlength="120" required autocomplete="email">
+                    <i class="bi bi-key position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;z-index:5;"></i>
+                    <input type="password" id="password" name="password"
+                           class="form-control ps-5 pe-5 guardly-password-input"
+                           placeholder="••••••••••••"
+                           minlength="12" maxlength="128"
+                           required
+                           autocomplete="new-password">
+                    <button type="button"
+                            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3 text-muted p-0 border-0"
+                            id="togglePassword"
+                            aria-label="Toggle password visibility"
+                            tabindex="-1"
+                            style="z-index:5; background:transparent;">
+                        <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                    </button>
+                    <div class="invalid-feedback">Password must be at least 12 characters.</div>
                 </div>
-            </div>
-
-            <div class="mb-3">
-                <label for="password" class="form-label text-muted small font-mono">Password (min. 12 chars)</label>
-                <div class="position-relative">
-                    <i class="bi bi-key position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
-                    <input type="password" id="password" name="password" class="form-control ps-5 font-mono guardly-password-input" placeholder="••••••••••••" minlength="12" maxlength="128" required autocomplete="new-password">
-                </div>
+                <!-- Password strength meter -->
                 <div id="password-strength-container" class="mt-2"></div>
             </div>
 
+            <!-- Confirm Password -->
             <div class="mb-4">
-                <label for="confirm_password" class="form-label text-muted small font-mono">Confirm Password</label>
+                <label for="confirm_password" class="form-label text-muted small fw-semibold">Confirm Password</label>
                 <div class="position-relative">
-                    <i class="bi bi-check2-circle position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events: none; z-index: 5;"></i>
-                    <input type="password" id="confirm_password" name="confirm_password" class="form-control ps-5 font-mono" placeholder="••••••••••••" minlength="12" maxlength="128" required autocomplete="new-password">
+                    <i class="bi bi-check2-circle position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;z-index:5;"></i>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                           class="form-control ps-5 pe-5"
+                           placeholder="••••••••••••"
+                           minlength="12" maxlength="128"
+                           required
+                           autocomplete="new-password">
+                    <button type="button"
+                            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3 text-muted p-0 border-0"
+                            id="toggleConfirm"
+                            aria-label="Toggle confirm password visibility"
+                            tabindex="-1"
+                            style="z-index:5; background:transparent;">
+                        <i class="bi bi-eye" id="toggleConfirmIcon"></i>
+                    </button>
+                    <div class="invalid-feedback" id="confirmFeedback">Passwords must match.</div>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">
-                <i class="bi bi-shield-lock me-1"></i> Register Free Account
+            <!-- Submit -->
+            <button type="submit" id="registerSubmitBtn" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">
+                <i class="bi bi-shield-lock me-1"></i> Create Free Account
             </button>
         </form>
 
-        <p class="text-center mt-3 text-muted small">
-            Already have an account? <a href="{{ url_for('auth.login') }}" class="text-info">Sign in</a>
+        <!-- Sign in link -->
+        <p class="text-center mt-3 text-muted small mb-0">
+            Already have an account?
+            <a href="{{ url_for('auth.login') }}" class="text-info fw-semibold">Sign in</a>
         </p>
 
+        <!-- Public scanner link -->
         <div class="mt-4 pt-3 border-top border-secondary border-opacity-20 text-center">
-            <p class="text-muted small mb-0"><i class="bi bi-info-circle text-info me-1"></i> Just need a quick scan? No account needed. <a href="{{ url_for('scanner.upload') }}" class="text-info text-decoration-none fw-semibold">Open Scanner</a></p>
+            <p class="text-muted small mb-0">
+                <i class="bi bi-info-circle text-info me-1"></i>
+                Just need a quick scan? No account needed.
+                <a href="{{ url_for('scanner.upload') }}" class="text-info fw-semibold text-decoration-none">Open Scanner</a>
+            </p>
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    // Helper: toggle show/hide
+    function attachToggle(btnId, inputId, iconId) {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (!btn || !input) return;
+        btn.addEventListener('click', () => {
+            const hidden = input.type === 'password';
+            input.type = hidden ? 'text' : 'password';
+            icon.className = hidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+            btn.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+        });
+    }
+    attachToggle('togglePassword', 'password', 'togglePasswordIcon');
+    attachToggle('toggleConfirm', 'confirm_password', 'toggleConfirmIcon');
+
+    // Live confirm-password match check
+    const pwdInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm_password');
+    const confirmFeedback = document.getElementById('confirmFeedback');
+    function checkMatch() {
+        if (!confirmInput.value) return;
+        if (pwdInput.value !== confirmInput.value) {
+            confirmInput.setCustomValidity('Passwords do not match.');
+            if (confirmFeedback) confirmFeedback.textContent = 'Passwords do not match.';
+        } else {
+            confirmInput.setCustomValidity('');
+            if (confirmFeedback) confirmFeedback.textContent = '';
+        }
+    }
+    if (confirmInput && pwdInput) {
+        confirmInput.addEventListener('input', checkMatch);
+        pwdInput.addEventListener('input', checkMatch);
+    }
+
+    // Bootstrap HTML5 validation feedback
+    const form = document.getElementById('registerForm');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            checkMatch();
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+
+    // Prevent double-submit
+    const submitBtn = document.getElementById('registerSubmitBtn');
+    if (form && submitBtn) {
+        form.addEventListener('submit', () => {
+            if (form.checkValidity()) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating account…';
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

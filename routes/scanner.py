@@ -1769,6 +1769,14 @@ def upload():
         None if _current_user
         else secrets.token_urlsafe(32)
     )
+    _scan_tenant_id = (
+        getattr(_current_user, "tenant_id", None)
+        if _current_user
+        else current_app.config.get(
+            "PUBLIC_SCAN_TENANT_ID",
+            current_app.config.get("DEFAULT_TENANT_ID", "default"),
+        )
+    ) or current_app.config.get("DEFAULT_TENANT_ID", "default")
 
     scan = EmailScan(
         user_id=(
@@ -1777,6 +1785,7 @@ def upload():
             else None
         ),
         guest_token=_guest_token,
+        tenant_id=_scan_tenant_id,
         sender=(
             ", ".join(email_data.get("from"))
             if isinstance(email_data.get("from"), list)

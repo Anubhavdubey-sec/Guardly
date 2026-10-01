@@ -47,6 +47,7 @@ class PublicScannerTests(unittest.TestCase):
         self.assertIsNone(scan.user_id)
         self.assertIsNotNone(scan.guest_token)
         self.assertTrue(len(scan.guest_token) >= 32)
+        self.assertEqual(scan.tenant_id, "default")
 
         # Guest result accessible via guest_token
         guest_res = self.client.get(f"/result/{scan.guest_token}")

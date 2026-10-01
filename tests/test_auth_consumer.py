@@ -140,5 +140,87 @@ class ConsumerAuthTests(unittest.TestCase):
         self.assertIsNone(User.query.filter_by(username="del_user").first())
         self.assertIsNone(db.session.get(EmailScan, scan_id))
 
+    def test_account_profile_update(self):
+        user = User(username="prof_user", email="prof@example.com", password=generate_password_hash("Password123456!"), role=User.ROLE_USER)
+        user2 = User(username="other_user", email="other@example.com", password=generate_password_hash("Password123456!"), role=User.ROLE_USER)
+        db.session.add_all([user, user2])
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user.id
+            sess["username"] = user.username
+
+        # Successful profile update
+        res = self.client.post("/account/profile", data={"username": "prof_updated", "email": "prof_new@example.com"}, follow_redirects=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/account", res.headers.get("Location", ""))
+
+        db.session.refresh(user)
+        self.assertEqual(user.username, "prof_updated")
+        self.assertEqual(user.email, "prof_new@example.com")
+
+        # Conflict check: cannot use another user's email or username
+        conflict_res = self.client.post("/account/profile", data={"username": "other_user", "email": "prof_new@example.com"}, follow_redirects=False)
+        self.assertEqual(conflict_res.status_code, 302)
+        db.session.refresh(user)
+        self.assertEqual(user.username, "prof_updated")
+
+    def test_account_password_change(self):
+        user = User(username="pwd_user", email="pwd@example.com", password=generate_password_hash("OldPassword123!"), role=User.ROLE_USER)
+        db.session.add(user)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user.id
+            sess["username"] = user.username
+
+        # Invalid old password
+        bad_res = self.client.post("/account/password", data={
+            "old_password": "WrongPassword123!",
+            "new_password": "NewStrongPassphrase123!",
+            "confirm_password": "NewStrongPassphrase123!",
+        }, follow_redirects=False)
+        self.assertEqual(bad_res.status_code, 302)
+
+        # Successful password update logs out user for re-authentication
+        good_res = self.client.post("/account/password", data={
+            "old_password": "OldPassword123!",
+            "new_password": "NewStrongPassphrase123!",
+            "confirm_password": "NewStrongPassphrase123!",
+        }, follow_redirects=False)
+        self.assertEqual(good_res.status_code, 302)
+        self.assertIn("/login", good_res.headers.get("Location", ""))
+
+    def test_mfa_setup_secret_persists_across_typos(self):
+        user = User(username="mfa_typo_user", email="mfatypo@example.com", password=generate_password_hash("Password123456!"), role=User.ROLE_USER)
+        db.session.add(user)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user.id
+            sess["username"] = user.username
+
+        # Initial setup visit generates secret
+        self.client.get("/account/mfa/setup")
+        with self.client.session_transaction() as sess:
+            initial_secret = sess.get("pending_mfa_secret")
+        self.assertIsNotNone(initial_secret)
+
+        # User submits wrong code
+        bad_post = self.client.post("/account/mfa/setup", data={"code": "000000"}, follow_redirects=False)
+        self.assertEqual(bad_post.status_code, 302)
+
+        # Following redirect back to setup MUST preserve the secret
+        self.client.get("/account/mfa/setup")
+        with self.client.session_transaction() as sess:
+            second_secret = sess.get("pending_mfa_secret")
+        self.assertEqual(initial_secret, second_secret)
+
+        # Cancel clears the pending secret
+        self.client.get("/account/mfa/cancel")
+        with self.client.session_transaction() as sess:
+            self.assertIsNone(sess.get("pending_mfa_secret"))
+
 if __name__ == "__main__":
     unittest.main()
+

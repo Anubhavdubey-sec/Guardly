@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime, timezone
 
 import click
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 from werkzeug.security import generate_password_hash
@@ -263,18 +263,23 @@ def create_app(test_config=None):
             "https://unpkg.com; "
             "style-src 'self' 'unsafe-inline' "
             "https://cdn.jsdelivr.net "
-            "https://unpkg.com; "
+            "https://unpkg.com "
+            "https://fonts.googleapis.com; "
             "img-src 'self' data: https: "
             "https://*.basemaps.cartocdn.com "
             "https://*.tile.openstreetmap.org; "
             "font-src 'self' "
             "https://cdn.jsdelivr.net "
-            "https://unpkg.com; "
+            "https://unpkg.com "
+            "https://fonts.gstatic.com; "
             "connect-src 'self' https:; "
             "frame-ancestors 'none';"
         )
 
-        if app.config.get("SESSION_COOKIE_SECURE"):
+        if app.config.get("SESSION_COOKIE_SECURE") and (
+            request.is_secure
+            or request.headers.get("X-Forwarded-Proto", "").lower() == "https"
+        ):
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"
             )
@@ -963,5 +968,7 @@ def scan_gmail_inbox_cmd(email, max_results):
 
 if __name__ == "__main__":
     app.run(
-        debug=app.config["DEBUG"]
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT") or 5000),
+        debug=app.config["DEBUG"],
     )

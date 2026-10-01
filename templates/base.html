@@ -15,13 +15,17 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function() {
-            const savedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme');
-            if (savedTheme === 'light') {
-                document.documentElement.setAttribute('data-bs-theme', 'light');
-                document.documentElement.classList.add('light-mode');
-            } else {
+            try {
+                const savedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme');
+                if (savedTheme === 'light') {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    document.documentElement.classList.add('light-mode');
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    document.documentElement.classList.remove('light-mode');
+                }
+            } catch (e) {
                 document.documentElement.setAttribute('data-bs-theme', 'dark');
-                document.documentElement.classList.remove('light-mode');
             }
         })();
     </script>
@@ -251,19 +255,32 @@
             // Smooth animated logo splash dismiss once per session (prevents navigation jitter in Chrome)
             const splash = document.getElementById('guardlySplash') || document.getElementById('phishguardSplash');
             if (splash) {
-                if (sessionStorage.getItem('guardly_splash_shown')) {
-                    splash.style.display = 'none';
-                    splash.remove();
-                } else {
-                    sessionStorage.setItem('guardly_splash_shown', 'true');
+                const dismissSplash = () => {
+                    splash.classList.add('fade-out');
                     setTimeout(() => {
-                        splash.classList.add('fade-out');
-                        setTimeout(() => {
-                            splash.style.display = 'none';
-                            splash.remove();
-                        }, 250);
-                    }, 300);
+                        splash.style.display = 'none';
+                        try { splash.remove(); } catch (_) {}
+                    }, 250);
+                };
+
+                try {
+                    if (sessionStorage.getItem('guardly_splash_shown')) {
+                        splash.style.display = 'none';
+                        try { splash.remove(); } catch (_) {}
+                    } else {
+                        sessionStorage.setItem('guardly_splash_shown', 'true');
+                        setTimeout(dismissSplash, 300);
+                    }
+                } catch (e) {
+                    dismissSplash();
                 }
+
+                // Global fail-safe: guarantee splash disappears on any device within 800ms
+                setTimeout(() => {
+                    if (splash && splash.parentNode) {
+                        dismissSplash();
+                    }
+                }, 800);
             }
         });
     </script>

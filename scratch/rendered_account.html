@@ -1,8 +1,225 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="csrf-token" content="b6bd42610ca51cfe90e30d155459d72f3977e721b600211e8f3c7239b0e050e5">
+    <title>Account Settings · Guardly</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="/static/css/glass-theme.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme');
+                if (savedTheme === 'light') {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    document.documentElement.classList.add('light-mode');
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    document.documentElement.classList.remove('light-mode');
+                }
+            } catch (e) {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body class="soc-body">
+    <!-- Ambient Animated Aurora Wallpaper -->
+    <div class="ambient-wallpaper-container" aria-hidden="true">
+        <div class="aurora-orb aurora-1"></div>
+        <div class="aurora-orb aurora-2"></div>
+        <div class="aurora-orb aurora-3"></div>
+        <div class="wallpaper-noise"></div>
+        <div class="wallpaper-vignette"></div>
+    </div>
 
-{% block title %}Account Settings · Guardly{% endblock %}
+    <!-- Initial Page Open Animated Logo Splash Screen -->
+    <div id="guardlySplash" class="splash-screen-overlay" aria-hidden="true">
+        <div class="splash-content text-center">
+            <div class="splash-logo-wrapper mb-3">
+                <div class="splash-radar-ring"></div>
+                <div class="splash-shield-orb d-flex align-items-center justify-content-center">
+                    <svg class="guardly-soldier-svg" width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="soldierGoldSplash" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#FBBF24"/>
+                          <stop offset="50%" stop-color="#F59E0B"/>
+                          <stop offset="100%" stop-color="#B45309"/>
+                        </linearGradient>
+                        <linearGradient id="soldierBlueSplash" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#2563EB"/>
+                          <stop offset="100%" stop-color="#1E3A8A"/>
+                        </linearGradient>
+                      </defs>
+                      <g id="figure" class="guardly-anim-figure">
+                        <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldSplash)"/>
+                        <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueSplash)" stroke="url(#soldierGoldSplash)" stroke-width="1.2"/>
+                        <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                      </g>
+                      <g id="shield" class="guardly-anim-shield">
+                        <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueSplash)" stroke="url(#soldierGoldSplash)" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldSplash)" stroke-width="1" opacity="0.6"/>
+                      </g>
+                      <g id="sword" class="guardly-anim-sword">
+                        <path d="M14 26H26" stroke="url(#soldierGoldSplash)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round" class="guardly-glint-path"/>
+                      </g>
+                    </svg>
+                </div>
+            </div>
+            <h1 class="splash-brand-title font-mono fw-bold mb-3">Guardly</h1>
+            <div class="splash-progress-bar mx-auto">
+                <div class="splash-progress-fill"></div>
+            </div>
+        </div>
+    </div>
 
-{% block content %}
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="soc-layout">
+        
+            <aside id="socSidebar" class="soc-sidebar">
+    <div class="sidebar-brand p-3 d-flex align-items-center justify-content-between">
+        <a href="/dashboard" class="brand-link text-decoration-none d-flex align-items-center gap-2 min-w-0 flex-shrink-1">
+            <div class="brand-icon-wrapper flex-shrink-0">
+                <svg class="pg-logo-svg" width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="soldierGoldGradSide" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#FBBF24"/>
+                      <stop offset="50%" stop-color="#F59E0B"/>
+                      <stop offset="100%" stop-color="#B45309"/>
+                    </linearGradient>
+                    <linearGradient id="soldierBlueGradSide" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#2563EB"/>
+                      <stop offset="100%" stop-color="#1E3A8A"/>
+                    </linearGradient>
+                  </defs>
+                  <g id="figure">
+                    <path d="M20 4C17.5 4 15.5 5.5 15 8H25C24.5 5.5 22.5 4 20 4Z" fill="url(#soldierGoldGradSide)"/>
+                    <path d="M14 9.5H26V15C26 18.3 23.3 21 20 21C16.7 21 14 18.3 14 15V9.5Z" fill="url(#soldierBlueGradSide)" stroke="url(#soldierGoldGradSide)" stroke-width="1.2"/>
+                    <path d="M16.5 13H23.5M20 13V17" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+                  </g>
+                  <g id="shield">
+                    <path d="M20 18L9 22V28C9 33.5 13.8 38 20 39.5C26.2 38 31 33.5 31 28V22L20 18Z" fill="url(#soldierBlueGradSide)" stroke="url(#soldierGoldGradSide)" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M20 22V36M12 27H28" stroke="url(#soldierGoldGradSide)" stroke-width="1" opacity="0.6"/>
+                  </g>
+                  <g id="sword">
+                    <path d="M14 26H26" stroke="url(#soldierGoldGradSide)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M20 10V26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M20 11V19" stroke="#60A5FA" stroke-width="1" stroke-linecap="round"/>
+                  </g>
+                </svg>
+            </div>
+            <div class="d-flex flex-column min-w-0 overflow-hidden sidebar-brand-text">
+                <span class="fw-bold text-white fs-5 lh-1 brand-name text-truncate">Guardly</span>
+            </div>
+        </a>
+        <button id="sidebarCollapse" class="sidebar-collapse-trigger flex-shrink-0 ms-auto d-none d-lg-flex" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <i class="bi bi-layout-sidebar-inset"></i>
+        </button>
+        <button id="sidebarCloseBtn" class="btn-close btn-close-white flex-shrink-0 d-lg-none ms-auto p-2" type="button" aria-label="Close sidebar"></button>
+    </div>
+    <nav class="sidebar-nav px-3 py-3">
+        <div class="nav-section-title font-mono">INVESTIGATION WORKSPACE</div>
+        <ul class="nav flex-column gap-1 mb-4">
+            <li class="nav-item">
+                <a class="nav-link " href="/dashboard">
+                    <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link " href="/upload">
+                    <i class="bi bi-cloud-arrow-up"></i> <span>Scan Sample</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link " href="/history">
+                    <i class="bi bi-layers-half"></i> <span>Investigation History</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link " href="/cases/">
+                    <i class="bi bi-briefcase-fill"></i> <span>Cases</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link " href="/threat-graph">
+                    <i class="bi bi-diagram-3-fill"></i> <span>Threat Graph</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/account">
+                    <i class="bi bi-person-gear"></i> <span>Account Settings</span>
+                </a>
+            </li>
+        </ul>
+
+        
+    </nav>
+    <div class="sidebar-footer p-3 mt-auto border-top border-secondary border-opacity-10">
+        <div class="engine-badge d-flex align-items-center gap-2 text-muted small">
+            <i class="bi bi-cpu text-info"></i>
+            <span class="font-mono" style="font-size: 0.72rem;">v2.4 Local Engine</span>
+        </div>
+    </div>
+</aside>
+            <div class="soc-main-wrapper">
+                <header class="soc-topbar">
+    <div class="d-flex align-items-center justify-content-between page-container h-100">
+        <div class="d-flex align-items-center gap-3 min-w-0">
+            <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-lg-none" type="button" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+            <a class="topbar-workspace d-none d-xl-flex align-items-center gap-2 text-decoration-none" href="/dashboard">
+                <i class="bi bi-grid-1x2-fill"></i><span>Investigation workspace</span>
+            </a>
+            <form class="topbar-search d-none d-md-flex align-items-center position-relative" method="get" action="/history" role="search">
+                <i class="bi bi-search search-icon position-absolute" style="pointer-events: none; z-index: 5;"></i>
+                <input id="globalSearch" type="search" name="q" class="form-control form-control-sm search-input ps-5" placeholder="Search reports, domains, IPs…" autocomplete="off">
+                <kbd class="search-kbd position-absolute" style="pointer-events: none; z-index: 5;">CTRL K</kbd>
+            </form>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="system-status-pill d-none d-lg-flex align-items-center gap-2">
+                <span class="status-pulse-dot"></span>
+                <span class="status-label font-mono">ENGINE ONLINE</span>
+            </div>
+            <div class="topbar-divider d-none d-sm-block"></div>
+            <div class="topbar-notifications position-relative">
+                <button class="btn btn-icon btn-sm topbar-icon-control" type="button" title="Notifications" aria-label="Notifications">
+                    <i class="bi bi-bell"></i><span class="notification-badge"></span>
+                </button>
+            </div>
+            
+                <div class="topbar-user-profile d-flex align-items-center gap-2 ms-1">
+                    <div class="user-avatar-badge">A</div>
+                    <div class="d-none d-lg-flex flex-column text-start">
+                        <span class="user-name fw-semibold lh-1">Anubhav2005</span>
+                        <span class="user-role font-mono text-uppercase">user</span>
+                    </div>
+                    <a href="/account" class="btn btn-sm btn-outline-secondary btn-icon" title="Account settings" aria-label="Account settings"><i class="bi bi-gear"></i></a>
+                    <a href="/change-password" class="btn btn-sm btn-outline-secondary btn-icon" title="Change password" aria-label="Change password"><i class="bi bi-key"></i></a>
+                    <form method="post" action="/logout" class="d-inline ms-1">
+                        <input type="hidden" name="csrf_token" value="b6bd42610ca51cfe90e30d155459d72f3977e721b600211e8f3c7239b0e050e5">
+                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Sign out" aria-label="Sign out"><i class="bi bi-box-arrow-right"></i></button>
+                    </form>
+                </div>
+            
+        </div>
+    </div>
+</header>
+                <main id="main-content" class="soc-content page-container py-4">
+        
+
+        
+    
+
+        
 <style>
 /* ==========================================================================
    Guardly Account Settings — Ultra-Premium Glass Design System
@@ -167,13 +384,6 @@ html.light-mode .profile-tile:hover {
 html.light-mode .tile-value {
     color: #0f172a;
 }
-
-/* Missing Bootstrap-compatible utilities used on this page */
-.min-w-0 { min-width: 0 !important; }
-.flex-grow-1 { flex-grow: 1 !important; }
-.letter-spacing-wide { letter-spacing: 0.25em !important; }
-.border-end-lg-only { border-right: 1px solid rgba(255,255,255,0.1); }
-@media (max-width: 991.98px) { .border-end-lg-only { border-right: none; } }
 </style>
 
 <div class="account-settings-container">
@@ -191,13 +401,13 @@ html.light-mode .tile-value {
             <h1 class="h3 fw-bold text-white mb-0">Account Settings</h1>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('scanner.upload') }}" class="btn btn-sm btn-primary shadow-sm">
+            <a href="/upload" class="btn btn-sm btn-primary shadow-sm">
                 <i class="bi bi-radar me-1"></i> New Scan
             </a>
-            <a href="{{ url_for('scanner.history') }}" class="btn btn-sm btn-outline-info">
+            <a href="/history" class="btn btn-sm btn-outline-info">
                 <i class="bi bi-clock-history me-1"></i> Scan History
             </a>
-            <a href="{{ url_for('auth.dashboard') }}" class="btn btn-sm btn-outline-light">
+            <a href="/dashboard" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-grid-fill me-1"></i> Dashboard
             </a>
         </div>
@@ -209,26 +419,26 @@ html.light-mode .tile-value {
     <div class="account-hero-card p-4 p-md-5 mb-4">
         <!-- Identity Header Strip -->
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pb-4 mb-4 border-bottom border-secondary border-opacity-25">
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3.5">
                 <div class="avatar-orb-wrapper">
                     <div class="avatar-orb-inner">
-                        {{ user.username[:1].upper() if user.username else 'U' }}
+                        A
                     </div>
                     <div class="online-beacon" title="Account Active"></div>
                 </div>
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                        <h2 class="h3 fw-bold text-white mb-0 font-mono">{{ user.username }}</h2>
+                        <h2 class="h3 fw-bold text-white mb-0 font-mono">Anubhav2005</h2>
                         <i class="bi bi-patch-check-fill text-info" title="Verified Identity" style="font-size: 1.15rem;"></i>
-                        <span class="badge {% if user.role == 'admin' %}bg-warning text-dark{% else %}bg-primary{% endif %} font-mono text-uppercase px-2 py-1">
-                            {{ user.role }}
+                        <span class="badge bg-primary font-mono text-uppercase px-2.5 py-1">
+                            user
                         </span>
                         <span class="badge bg-success-subtle text-success border border-success border-opacity-25 font-mono px-2 py-1" style="font-size: 0.7rem;">
                             <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>ACTIVE
                         </span>
                     </div>
                     <div class="text-muted small font-mono d-flex align-items-center flex-wrap gap-2">
-                        <span><i class="bi bi-envelope-at text-info me-1"></i>{{ user.email }}</span>
+                        <span><i class="bi bi-envelope-at text-info me-1"></i>anubhavdubey250@gmail.com</span>
                         <button type="button" class="copy-badge-btn" id="copyEmailHeaderBtn" title="Copy email address">
                             <i class="bi bi-clipboard" id="copyEmailHeaderIcon"></i>
                         </button>
@@ -237,12 +447,12 @@ html.light-mode .tile-value {
             </div>
 
             <!-- Health Summary Badge -->
-            <div class="d-flex align-items-center gap-2 p-2 rounded-3 bg-dark border border-secondary border-opacity-25 align-self-start align-self-md-center">
-                <i class="bi bi-shield-lock-fill {% if user.mfa_enabled %}text-success{% else %}text-warning{% endif %} fs-4"></i>
+            <div class="d-flex align-items-center gap-2 p-2.5 rounded-3 bg-dark border border-secondary border-opacity-25 align-self-start align-self-md-center">
+                <i class="bi bi-shield-lock-fill text-warning fs-4"></i>
                 <div>
                     <span class="text-muted font-mono d-block" style="font-size: 0.68rem; letter-spacing: 0.05em;">2FA PROTECTION</span>
-                    <span class="fw-bold font-mono small {% if user.mfa_enabled %}text-success{% else %}text-warning{% endif %}">
-                        {% if user.mfa_enabled %}ENABLED (TOTP){% else %}DISABLED{% endif %}
+                    <span class="fw-bold font-mono small text-warning">
+                        DISABLED
                     </span>
                 </div>
             </div>
@@ -258,7 +468,7 @@ html.light-mode .tile-value {
                     </div>
                     <div class="min-w-0 flex-grow-1">
                         <div class="tile-label">Username</div>
-                        <div class="tile-value font-mono text-truncate">@{{ user.username }}</div>
+                        <div class="tile-value font-mono text-truncate">@Anubhav2005</div>
                         <div class="tile-subtext font-mono">Unique account handle</div>
                     </div>
                 </div>
@@ -272,7 +482,7 @@ html.light-mode .tile-value {
                     </div>
                     <div class="min-w-0 flex-grow-1">
                         <div class="tile-label">Email Address</div>
-                        <div class="tile-value font-mono text-truncate" title="{{ user.email }}">{{ user.email }}</div>
+                        <div class="tile-value font-mono text-truncate" title="anubhavdubey250@gmail.com">anubhavdubey250@gmail.com</div>
                         <div class="tile-subtext font-mono">Notification endpoint</div>
                     </div>
                 </div>
@@ -287,7 +497,7 @@ html.light-mode .tile-value {
                     <div class="min-w-0 flex-grow-1">
                         <div class="tile-label">Account Privilege</div>
                         <div class="tile-value font-mono text-uppercase">
-                            <span class="text-warning fw-bold">{{ user.role }}</span>
+                            <span class="text-warning fw-bold">user</span>
                         </div>
                         <div class="tile-subtext font-mono">Role-based access level</div>
                     </div>
@@ -302,7 +512,7 @@ html.light-mode .tile-value {
                     </div>
                     <div class="min-w-0 flex-grow-1">
                         <div class="tile-label">Organization Tenant</div>
-                        <div class="tile-value font-mono text-truncate" title="{{ user.tenant_id or 'default' }}">{{ user.tenant_id or 'default' }}</div>
+                        <div class="tile-value font-mono text-truncate" title="default">default</div>
                         <div class="tile-subtext font-mono">Data isolation partition</div>
                     </div>
                 </div>
@@ -317,8 +527,8 @@ html.light-mode .tile-value {
                     <div class="min-w-0 flex-grow-1">
                         <div class="tile-label">Total Investigations</div>
                         <div class="tile-value font-mono">
-                            <a href="{{ url_for('scanner.history') }}" class="text-info text-decoration-none fw-bold">
-                                {{ scans_count|default(0) }} scans <i class="bi bi-arrow-up-right small"></i>
+                            <a href="/history" class="text-info text-decoration-none fw-bold">
+                                0 scans <i class="bi bi-arrow-up-right small"></i>
                             </a>
                         </div>
                         <div class="tile-subtext font-mono">Stored email threat reports</div>
@@ -335,7 +545,7 @@ html.light-mode .tile-value {
                     <div class="min-w-0 flex-grow-1">
                         <div class="tile-label">Member Since</div>
                         <div class="tile-value font-mono">
-                            {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'Active' }}
+                            September 17, 2026
                         </div>
                         <div class="tile-subtext font-mono">Registration timestamp</div>
                     </div>
@@ -345,142 +555,10 @@ html.light-mode .tile-value {
     </div>
 
     <!-- Emergency Recovery Codes Notice (displayed immediately after MFA activation) -->
-    {% if show_recovery and recovery_codes %}
-        <div class="soc-card border-warning border-opacity-50 p-4 mb-4" style="background: rgba(245,158,11,0.06);">
-            <div class="d-flex align-items-start gap-3">
-                <div class="text-warning fs-3 flex-shrink-0">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h2 class="h5 fw-bold text-warning mb-1">Save Your Emergency Recovery Codes</h2>
-                    <p class="text-muted small mb-3">
-                        These one-time recovery codes let you sign in if you lose access to your authenticator app.
-                        Each code can only be used once. Store them in a secure password manager or safe physical location.
-                    </p>
-                    <div class="row g-2 p-3 rounded-3 bg-dark border border-secondary border-opacity-25 font-mono mb-3" id="recoveryCodesGrid">
-                        {% for rc in recovery_codes %}
-                            <div class="col-6 col-sm-3 text-center py-1">
-                                <span class="badge bg-dark border border-warning border-opacity-50 text-warning px-2 py-1 fs-6 font-mono user-select-all">{{ rc }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-sm btn-warning fw-bold" id="copyAllCodesBtn">
-                            <i class="bi bi-clipboard-check me-1"></i> Copy All Codes
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="downloadCodesBtn">
-                            <i class="bi bi-download me-1"></i> Download (.txt)
-                        </button>
-                        <a href="{{ url_for('auth.account') }}" class="btn btn-sm btn-outline-secondary ms-auto">
-                            I Have Saved My Codes
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endif %}
+    
 
     <!-- In-Progress MFA Setup Modal / Panel -->
-    {% if show_setup %}
-        <div class="soc-card border-primary border-opacity-50 p-4 mb-4" style="background: rgba(37,99,235,0.05);">
-            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-25">
-                <h2 class="h5 fw-bold text-white mb-0">
-                    <i class="bi bi-shield-plus text-primary me-2"></i>Configure Two-Factor Authentication (2FA)
-                </h2>
-                <a href="{{ url_for('auth.mfa_cancel') }}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-x-lg me-1"></i> Cancel Setup
-                </a>
-            </div>
-
-            <div class="row g-4">
-                <!-- Step 1: Scan QR or copy key -->
-                <div class="col-lg-6 border-end-lg-only">
-                    <div class="pe-lg-3">
-                        <span class="badge bg-primary-subtle text-primary font-mono mb-2">STEP 1</span>
-                        <h3 class="h6 fw-bold text-white mb-2">Scan QR Code with Authenticator App</h3>
-                        <p class="text-muted small mb-3">
-                            Open Google Authenticator, Microsoft Authenticator, Authy, or 1Password and scan this QR code:
-                        </p>
-
-                        <!-- Centered QR Code Box -->
-                        <div class="text-center my-3">
-                            <div class="d-inline-block p-3 rounded-3 bg-white shadow-sm" id="qrcodeContainer" style="min-width: 180px; min-height: 180px;">
-                                <!-- QR rendered by QRCode.js -->
-                            </div>
-                        </div>
-
-                        <!-- Mobile direct link -->
-                        <div class="text-center mb-3">
-                            <a href="{{ totp_uri }}" class="btn btn-sm btn-outline-info">
-                                <i class="bi bi-box-arrow-up-right me-1"></i> Open in Authenticator App
-                            </a>
-                        </div>
-
-                        <!-- Manual Key Box -->
-                        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="text-muted small font-mono">MANUAL SETUP SECRET</span>
-                                <button type="button" class="btn btn-link btn-sm text-info p-0 text-decoration-none" id="copyKeyBtn">
-                                    <i class="bi bi-clipboard me-1"></i>Copy
-                                </button>
-                            </div>
-                            <code class="fs-6 text-warning font-mono user-select-all d-block text-break" id="mfaSecretText">{{ mfa_setup_secret }}</code>
-                        </div>
-
-                        <div class="mt-2 text-end">
-                            <a href="{{ url_for('auth.mfa_setup', refresh=1) }}" class="text-muted small text-decoration-none" onclick="return confirm('Regenerating will replace the current key. Continue?');">
-                                <i class="bi bi-arrow-repeat me-1"></i>Generate New Key
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 2: Verification code challenge -->
-                <div class="col-lg-6">
-                    <div class="ps-lg-3">
-                        <span class="badge bg-primary-subtle text-primary font-mono mb-2">STEP 2</span>
-                        <h3 class="h6 fw-bold text-white mb-2">Verify 6-Digit Passcode</h3>
-                        <p class="text-muted small mb-3">
-                            Enter the 6-digit code currently shown in your authenticator app to complete activation:
-                        </p>
-
-                        <form method="post" action="{{ url_for('auth.mfa_setup') }}" id="mfaSetupForm">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                            <div class="mb-4">
-                                <label for="mfaCodeInput" class="form-label text-muted small fw-semibold">Authenticator Code</label>
-                                <div class="position-relative">
-                                    <i class="bi bi-123 position-absolute top-50 start-0 translate-middle-y ms-3 text-muted fs-5" style="pointer-events:none;z-index:5;"></i>
-                                    <input type="text"
-                                           id="mfaCodeInput"
-                                           name="code"
-                                           class="form-control form-control-lg ps-5 font-mono text-center fw-bold fs-4"
-                                           style="letter-spacing: 0.25em;"
-                                           placeholder="123456"
-                                           maxlength="6"
-                                           pattern="[0-9]{6}"
-                                           inputmode="numeric"
-                                           autocomplete="one-time-code"
-                                           required
-                                           autofocus>
-                                </div>
-                                <div class="form-text text-muted small">6 digits, refreshed every 30 seconds.</div>
-                            </div>
-
-                            <div class="d-flex flex-column gap-2">
-                                <button type="submit" id="activateMfaBtn" class="btn btn-primary py-2 fw-bold shadow-sm">
-                                    <i class="bi bi-shield-check me-1"></i> Verify &amp; Activate 2FA
-                                </button>
-                                <a href="{{ url_for('auth.mfa_cancel') }}" class="btn btn-outline-light py-2">
-                                    Cancel
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endif %}
+    
 
     <!-- Balanced Two-Column Security Grid: 2FA on the Left, Change Password on the Right -->
     <div class="row g-4">
@@ -491,58 +569,16 @@ html.light-mode .tile-value {
                     <h2 class="h5 fw-bold text-white mb-0">
                         <i class="bi bi-shield-lock text-info me-2"></i>Two-Factor Authentication
                     </h2>
-                    {% if user.mfa_enabled %}
-                        <span class="badge bg-success font-mono"><i class="bi bi-check-circle-fill me-1"></i>ENABLED</span>
-                    {% else %}
+                    
                         <span class="badge bg-secondary font-mono">NOT CONFIGURED</span>
-                    {% endif %}
+                    
                 </div>
 
                 <p class="text-muted small mb-4">
                     Protect your account against phishing and credential stuffing with time-based one-time passcodes (RFC 6238 TOTP).
                 </p>
 
-                {% if user.mfa_enabled %}
-                    <div class="p-3 rounded-3 bg-dark border border-success border-opacity-50 mb-4">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="bi bi-shield-fill-check text-success fs-2 flex-shrink-0"></i>
-                            <div>
-                                <div class="fw-bold text-white">2FA is Actively Protecting Your Account</div>
-                                <div class="text-muted small">Passcodes from your mobile authenticator app are required at every sign in.</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 mb-4">
-                        <h3 class="fs-6 fw-bold text-white mb-1"><i class="bi bi-shield-shaded text-info me-1"></i>Security Specifications</h3>
-                        <ul class="text-muted small mb-0 ps-3">
-                            <li>Algorithm: HMAC-SHA1 TOTP (30-second rotation)</li>
-                            <li>Backup: 8 emergency single-use recovery codes</li>
-                            <li>Clock-skew tolerance: &plusmn;30 seconds</li>
-                        </ul>
-                    </div>
-
-                    <!-- Disable MFA Collapsible Drawer -->
-                    <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
-                        <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#disableMfaCollapse" aria-expanded="false" aria-controls="disableMfaCollapse">
-                            <i class="bi bi-shield-x me-1"></i> Disable Two-Factor Authentication
-                        </button>
-
-                        <div class="collapse mt-3" id="disableMfaCollapse">
-                            <div class="p-3 rounded-3 bg-dark border border-danger border-opacity-50">
-                                <p class="text-danger small fw-semibold mb-2">Confirm your current account password to disable 2FA:</p>
-                                <form method="post" action="{{ url_for('auth.mfa_disable') }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <div class="input-group">
-                                        <input type="password" name="password" class="form-control font-mono" placeholder="Current password" required autocomplete="current-password">
-                                        <button type="submit" class="btn btn-danger">Confirm &amp; Disable</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-                {% elif not show_setup %}
+                
                     <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 mb-4">
                         <div class="d-flex align-items-center gap-3">
                             <i class="bi bi-shield-slash text-muted fs-2 flex-shrink-0"></i>
@@ -561,15 +597,11 @@ html.light-mode .tile-value {
                     </div>
 
                     <div class="mt-auto pt-3">
-                        <a href="{{ url_for('auth.mfa_setup') }}" class="btn btn-primary fw-bold px-4 py-2 shadow-sm">
+                        <a href="/account/mfa/setup" class="btn btn-primary fw-bold px-4 py-2.5 shadow-sm">
                             <i class="bi bi-shield-plus me-1"></i> Configure Two-Factor Authentication
                         </a>
                     </div>
-                {% else %}
-                    <div class="p-3 rounded-3 bg-dark border border-primary border-opacity-25">
-                        <p class="text-info small mb-0"><i class="bi bi-info-circle me-1"></i> MFA setup is currently in progress above.</p>
-                    </div>
-                {% endif %}
+                
             </div>
         </div>
 
@@ -587,8 +619,8 @@ html.light-mode .tile-value {
                     Update your account password. Long passphrases with mixed characters are recommended.
                 </p>
 
-                <form method="post" action="{{ url_for('auth.account_change_password') }}" id="accountPasswordForm" class="d-flex flex-column flex-grow-1" novalidate>
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form method="post" action="/account/password" id="accountPasswordForm" class="d-flex flex-column flex-grow-1" novalidate>
+                    <input type="hidden" name="csrf_token" value="b6bd42610ca51cfe90e30d155459d72f3977e721b600211e8f3c7239b0e050e5">
 
                     <!-- Current Password -->
                     <div class="mb-3">
@@ -631,7 +663,7 @@ html.light-mode .tile-value {
                     </div>
 
                     <div class="mt-auto pt-2">
-                        <button type="submit" id="updatePwdBtn" class="btn btn-primary fw-bold px-4 py-2 shadow-sm">
+                        <button type="submit" id="updatePwdBtn" class="btn btn-primary fw-bold px-4 py-2.5 shadow-sm">
                             <i class="bi bi-shield-check me-1"></i> Update Password
                         </button>
                     </div>
@@ -661,8 +693,8 @@ html.light-mode .tile-value {
                 <p class="text-danger small fw-semibold mb-2">
                     <i class="bi bi-shield-exclamation me-1"></i> To confirm deletion, enter your current account password:
                 </p>
-                <form method="post" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm('FINAL CONFIRMATION: Are you sure you want to permanently delete your account and all scans?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form method="post" action="/account/delete" onsubmit="return confirm('FINAL CONFIRMATION: Are you sure you want to permanently delete your account and all scans?');">
+                    <input type="hidden" name="csrf_token" value="b6bd42610ca51cfe90e30d155459d72f3977e721b600211e8f3c7239b0e050e5">
                     <div class="row g-2 align-items-center" style="max-width: 520px;">
                         <div class="col-sm-8">
                             <input type="password" name="password" class="form-control font-mono" placeholder="Enter current password" required autocomplete="current-password">
@@ -680,104 +712,10 @@ html.light-mode .tile-value {
 </div>
 
 <!-- QR Code Library for TOTP Setup -->
-{% if show_setup %}
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('qrcodeContainer');
-    const totpUri = {{ totp_uri|tojson }};
-    if (container && totpUri) {
-        try {
-            if (typeof QRCode !== 'undefined') {
-                new QRCode(container, {
-                    text: totpUri,
-                    width: 180,
-                    height: 180,
-                    colorDark: "#0f172a",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            } else {
-                container.innerHTML = '<p class="text-muted small p-2 mb-0">Scan not available offline. Please use the Manual Setup Secret below.</p>';
-            }
-        } catch (e) {
-            console.error('QR code generation error:', e);
-            container.innerHTML = '<p class="text-muted small p-2 mb-0">Use the manual setup key below.</p>';
-        }
-    }
 
-    // 1-Click Copy Secret Key
-    const copyKeyBtn = document.getElementById('copyKeyBtn');
-    const mfaSecret = document.getElementById('mfaSecretText');
-    if (copyKeyBtn && mfaSecret) {
-        copyKeyBtn.addEventListener('click', function() {
-            navigator.clipboard.writeText(mfaSecret.textContent.trim()).then(() => {
-                copyKeyBtn.innerHTML = '<i class="bi bi-check2 text-success me-1"></i>Copied!';
-                setTimeout(() => {
-                    copyKeyBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy';
-                }, 2000);
-            });
-        });
-    }
-
-    // Auto-focus and numeric filter on MFA code input
-    const mfaInput = document.getElementById('mfaCodeInput');
-    if (mfaInput) {
-        mfaInput.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-    }
-});
-</script>
-{% endif %}
 
 <!-- Recovery Codes Copy & Download Scripts -->
-{% if show_recovery and recovery_codes %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const copyBtn = document.getElementById('copyAllCodesBtn');
-    const downloadBtn = document.getElementById('downloadCodesBtn');
-    const codes = {{ recovery_codes|tojson }};
 
-    if (copyBtn && codes) {
-        copyBtn.addEventListener('click', function() {
-            const formatted = codes.join('\n');
-            navigator.clipboard.writeText(formatted).then(() => {
-                copyBtn.innerHTML = '<i class="bi bi-check2 text-success me-1"></i> Codes Copied!';
-                setTimeout(() => {
-                    copyBtn.innerHTML = '<i class="bi bi-clipboard-check me-1"></i> Copy All Codes';
-                }, 2500);
-            });
-        });
-    }
-
-    if (downloadBtn && codes) {
-        downloadBtn.addEventListener('click', function() {
-            const textContent = [
-                "GUARDLY TWO-FACTOR AUTHENTICATION RECOVERY CODES",
-                "Generated: " + new Date().toISOString(),
-                "Account: {{ user.username }} ({{ user.email }})",
-                "",
-                "Keep these codes in a safe place. Each code can be used once as your 2FA token.",
-                "----------------------------------------",
-                codes.join('\n'),
-                "----------------------------------------"
-            ].join('\n');
-
-            const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "guardly-recovery-codes.txt";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-    }
-});
-</script>
-{% endif %}
 
 <script>
 (function() {
@@ -786,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const copyEmailIcon = document.getElementById('copyEmailHeaderIcon');
     if (copyEmailBtn && copyEmailIcon) {
         copyEmailBtn.addEventListener('click', function() {
-            navigator.clipboard.writeText("{{ user.email }}").then(() => {
+            navigator.clipboard.writeText("anubhavdubey250@gmail.com").then(() => {
                 copyEmailIcon.className = "bi bi-check2 text-success";
                 setTimeout(() => {
                     copyEmailIcon.className = "bi bi-clipboard";
@@ -850,4 +788,139 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })();
 </script>
-{% endblock %}
+
+
+        </main>
+        
+            </div>
+        
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('sidebarToggle');
+            const collapseToggle = document.getElementById('sidebarCollapse');
+            const sidebar = document.getElementById('socSidebar');
+            
+            const applyTheme = (theme) => {
+                
+                    document.body.classList.remove('light-mode');
+                    document.documentElement.classList.remove('light-mode');
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    return;
+                
+                const isLight = theme === 'light';
+                document.body.classList.toggle('light-mode', isLight);
+                document.documentElement.classList.toggle('light-mode', isLight);
+                document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
+                localStorage.setItem('guardly-theme', isLight ? 'light' : 'dark');
+
+                document.querySelectorAll('#themeToggle, .theme-toggle-btn').forEach(btn => {
+                    btn.setAttribute('aria-pressed', String(isLight));
+                    btn.setAttribute('title', isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isLight ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+                    }
+                });
+            };
+
+            const setSidebarState = (collapsed) => {
+                document.body.classList.toggle('sidebar-collapsed', collapsed);
+                if (collapseToggle) {
+                    collapseToggle.setAttribute('aria-expanded', String(!collapsed));
+                    collapseToggle.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+                    const icon = collapseToggle.querySelector('i');
+                    if (icon) {
+                        icon.className = collapsed ? 'bi bi-layout-sidebar-inset-reverse' : 'bi bi-layout-sidebar-inset';
+                    }
+                }
+                localStorage.setItem('guardly-sidebar-collapsed', String(collapsed));
+            };
+
+            if ((localStorage.getItem('guardly-sidebar-collapsed') === 'true' || localStorage.getItem('phishguard-sidebar-collapsed') === 'true') && window.innerWidth >= 992) {
+                setSidebarState(true);
+            }
+            collapseToggle?.addEventListener('click', () => setSidebarState(!document.body.classList.contains('sidebar-collapsed')));
+
+            const closeBtn = document.getElementById('sidebarCloseBtn');
+            let backdrop = document.getElementById('sidebarBackdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'sidebarBackdrop';
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
+            }
+
+            const closeSidebar = () => {
+                sidebar?.classList.remove('show');
+                backdrop?.classList.remove('show');
+            };
+
+            if (toggle && sidebar) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = sidebar.classList.toggle('show');
+                    backdrop.classList.toggle('show', Boolean(isOpen));
+                });
+            }
+
+            closeBtn?.addEventListener('click', closeSidebar);
+            backdrop?.addEventListener('click', closeSidebar);
+
+            const currentSavedTheme = localStorage.getItem('guardly-theme') || localStorage.getItem('phishguard-theme') || 'dark';
+            applyTheme(currentSavedTheme);
+
+            const globalSearch = document.getElementById('globalSearch');
+            document.addEventListener('keydown', (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && globalSearch) {
+                    event.preventDefault();
+                    globalSearch.focus();
+                    globalSearch.select();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('#themeToggle, .theme-toggle-btn');
+                if (btn) {
+                    const isNowLight = document.body.classList.contains('light-mode');
+                    const nextTheme = isNowLight ? 'dark' : 'light';
+                    applyTheme(nextTheme);
+                }
+            });
+
+            // Smooth animated logo splash dismiss once per session (prevents navigation jitter in Chrome)
+            const splash = document.getElementById('guardlySplash') || document.getElementById('phishguardSplash');
+            if (splash) {
+                const dismissSplash = () => {
+                    splash.classList.add('fade-out');
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                        try { splash.remove(); } catch (_) {}
+                    }, 250);
+                };
+
+                try {
+                    if (sessionStorage.getItem('guardly_splash_shown')) {
+                        splash.style.display = 'none';
+                        try { splash.remove(); } catch (_) {}
+                    } else {
+                        sessionStorage.setItem('guardly_splash_shown', 'true');
+                        setTimeout(dismissSplash, 300);
+                    }
+                } catch (e) {
+                    dismissSplash();
+                }
+
+                // Global fail-safe: guarantee splash disappears on any device within 800ms
+                setTimeout(() => {
+                    if (splash && splash.parentNode) {
+                        dismissSplash();
+                    }
+                }, 800);
+            }
+        });
+    </script>
+    <script src="/static/js/password_strength.js"></script>
+</body>
+</html>
