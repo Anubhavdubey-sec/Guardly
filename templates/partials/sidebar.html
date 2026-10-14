@@ -49,9 +49,32 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'scanner.upload' %}active{% endif %}" href="{{ url_for('scanner.upload') }}">
-                    <i class="bi bi-cloud-arrow-up"></i> <span>Scan Sample</span>
+                    <i class="bi bi-cloud-arrow-up"></i> <span>Scan Email</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'scanner.history' %}active{% endif %}" href="{{ url_for('scanner.history') }}">
+                    <i class="bi bi-journal-code"></i> <span>Scan History</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="nav-section-title font-mono">INTELLIGENCE</div>
+        <ul class="nav flex-column gap-1 mb-4">
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'cases.list_cases' %}active{% endif %}" href="{{ url_for('cases.list_cases') }}">
+                    <i class="bi bi-folder2-open"></i> <span>Cases</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'graph.view_threat_graph' %}active{% endif %}" href="{{ url_for('graph.view_threat_graph') }}">
+                    <i class="bi bi-diagram-3-fill"></i> <span>Threat Graph</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="nav-section-title font-mono">ACCOUNT</div>
+        <ul class="nav flex-column gap-1 mb-4">
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'auth.account' %}active{% endif %}" href="{{ url_for('auth.account') }}">
                     <i class="bi bi-person-gear"></i> <span>Account Settings</span>
