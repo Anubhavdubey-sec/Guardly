@@ -758,6 +758,11 @@ class GeolocationService:
 _geo_service_instance: Optional[GeolocationService] = None
 _geo_service_lock = threading.Lock()
 
+# Absolute path to the project data directory (services/ -> parent -> data/)
+_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_DEFAULT_CITY_PATH = os.path.join(_BASE_DIR, "data", "GeoLite2-City.mmdb")
+_DEFAULT_ASN_PATH = os.path.join(_BASE_DIR, "data", "GeoLite2-ASN.mmdb")
+
 
 def get_geolocation_service(config_obj: Optional[Any] = None) -> GeolocationService:
     """
@@ -773,9 +778,9 @@ def get_geolocation_service(config_obj: Optional[Any] = None) -> GeolocationServ
         if _geo_service_instance is not None:
             return _geo_service_instance
 
-        # Extract config values with safe defaults
-        city_path = "./data/GeoLite2-City.mmdb"
-        asn_path = "./data/GeoLite2-ASN.mmdb"
+        # Extract config values with safe absolute defaults (CWD-independent)
+        city_path = _DEFAULT_CITY_PATH
+        asn_path = _DEFAULT_ASN_PATH
         cache_max_size = 10000
         cache_ttl = 3600
         cache_neg_ttl = 300
