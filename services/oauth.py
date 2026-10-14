@@ -13,8 +13,8 @@ def init_oauth(app):
     """Initializes OAuth with Flask application."""
     oauth.init_app(app)
 
-    client_id = app.config.get("GOOGLE_CLIENT_ID") or os.getenv("GOOGLE_CLIENT_ID", "")
-    client_secret = app.config.get("GOOGLE_CLIENT_SECRET") or os.getenv("GOOGLE_CLIENT_SECRET", "")
+    client_id = (app.config.get("GOOGLE_CLIENT_ID") or os.getenv("GOOGLE_CLIENT_ID", "")).strip().strip('"\'')
+    client_secret = (app.config.get("GOOGLE_CLIENT_SECRET") or os.getenv("GOOGLE_CLIENT_SECRET", "")).strip().strip('"\'')
 
     if client_id and client_secret:
         oauth.register(
@@ -31,9 +31,9 @@ def init_oauth(app):
 
 def is_google_auth_configured() -> bool:
     """Returns True if Google Client ID and Secret are configured."""
-    client_id = os.getenv("GOOGLE_CLIENT_ID", "")
-    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip().strip('"\'')
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip().strip('"\'')
     if current_app:
-        client_id = current_app.config.get("GOOGLE_CLIENT_ID") or client_id
-        client_secret = current_app.config.get("GOOGLE_CLIENT_SECRET") or client_secret
+        client_id = (current_app.config.get("GOOGLE_CLIENT_ID") or client_id).strip().strip('"\'')
+        client_secret = (current_app.config.get("GOOGLE_CLIENT_SECRET") or client_secret).strip().strip('"\'')
     return bool(client_id and client_secret)

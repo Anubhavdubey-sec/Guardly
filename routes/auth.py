@@ -185,7 +185,14 @@ def google_callback():
         if not user_info:
             user_info = oauth.google.userinfo()
     except Exception as exc:
-        flash(f"Google authentication failed: {exc}", "danger")
+        err_str = str(exc)
+        if "invalid_client" in err_str or "client secret is invalid" in err_str:
+            flash(
+                "Google authentication failed: The provided Client Secret is invalid. Please copy the fresh Client Secret from Google Cloud Console (APIs & Services > Credentials > OAuth 2.0 Client IDs) and update GOOGLE_CLIENT_SECRET in your environment.",
+                "danger",
+            )
+        else:
+            flash(f"Google authentication failed: {exc}", "danger")
         return redirect(url_for("auth.login"))
 
     if not user_info or not user_info.get("email"):
