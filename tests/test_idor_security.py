@@ -80,5 +80,27 @@ class IDORSecurityTests(unittest.TestCase):
         # Guest scan cannot be queried via standard /scans/<id> without auth
         self.assertEqual(self.client.get(f"/scans/{self.guest_scan.id}").status_code, 302)
 
+    def test_multi_tenant_admin_scan_isolation(self):
+        admin_a = User(username="admin_a", email="admin_a@tenant-a.com", password=generate_password_hash("pass12345678"), role=User.ROLE_ADMIN, tenant_id="tenant_a")
+        admin_b = User(username="admin_b", email="admin_b@tenant-b.com", password=generate_password_hash("pass12345678"), role=User.ROLE_ADMIN, tenant_id="tenant_b")
+        db.session.add_all([admin_a, admin_b])
+        db.session.commit()
+
+        scan_b = EmailScan(user_id=admin_b.id, tenant_id="tenant_b", subject="Tenant B Classified Scan", risk_score=50, verdict="Medium Risk")
+        guest_scan_b = EmailScan(guest_token="guest_token_b_1234567890abcdef", tenant_id="tenant_b", user_id=None, subject="Tenant B Guest Scan", risk_score=40, verdict="Medium Risk")
+        db.session.add_all([scan_b, guest_scan_b])
+        db.session.commit()
+
+        # Admin B can view Tenant B scans
+        self._login(admin_b)
+        self.assertEqual(self.client.get(f"/scans/{scan_b.id}").status_code, 200)
+        self.assertEqual(self.client.get(f"/scans/{guest_scan_b.id}").status_code, 200)
+
+        # Admin A cannot view Tenant B scans (cross-tenant leak prevented)
+        self._login(admin_a)
+        self.assertEqual(self.client.get(f"/scans/{scan_b.id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/scans/{guest_scan_b.id}").status_code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()

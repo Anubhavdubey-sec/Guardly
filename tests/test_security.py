@@ -262,6 +262,10 @@ class SecurityHardeningTests(unittest.TestCase):
         self.assertIn("Permissions-Policy", res.headers)
         self.assertIn("Content-Security-Policy", res.headers)
 
+        # Over HTTPS / reverse proxy, Strict-Transport-Security must be sent
+        res_https = client.get("/upload", headers={"X-Forwarded-Proto": "https"})
+        self.assertEqual(res_https.headers.get("Strict-Transport-Security"), "max-age=31536000; includeSubDomains")
+
 
 if __name__ == "__main__":
     unittest.main()

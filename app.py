@@ -276,7 +276,7 @@ def create_app(test_config=None):
             "frame-ancestors 'none';"
         )
 
-        if app.config.get("SESSION_COOKIE_SECURE") and (
+        if (
             request.is_secure
             or request.headers.get("X-Forwarded-Proto", "").lower() == "https"
         ):

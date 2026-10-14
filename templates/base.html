@@ -29,6 +29,77 @@
             }
         })();
     </script>
+    <style>
+        /* Password Strength Widget */
+        .password-strength-widget {
+            margin-top: 0.65rem;
+            padding: 0.75rem 0.9rem;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+        }
+        .password-strength-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.45rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .password-strength-heading span {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 0.7rem;
+        }
+        .strength-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.55rem;
+            border-radius: 6px;
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+            transition: all 0.25s ease;
+        }
+        .strength-label.is-danger { color: #fca5a5; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.35); }
+        .strength-label.is-warning { color: #fde047; background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.35); }
+        .strength-label.is-info { color: #7dd3fc; background: rgba(56, 189, 248, 0.18); border: 1px solid rgba(56, 189, 248, 0.35); }
+        .strength-label.is-success { color: #86efac; background: rgba(34, 197, 94, 0.18); border: 1px solid rgba(34, 197, 94, 0.35); }
+        .password-strength-track {
+            height: 6px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-bottom: 0.6rem;
+        }
+        .strength-bar {
+            display: block;
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+        }
+        .password-checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .password-rule {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            transition: color 0.2s ease;
+        }
+        .password-rule i {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .password-rule.is-valid { color: #86efac; }
+        .password-rule.is-valid i { color: #22c55e; }
+    </style>
 </head>
 <body class="soc-body">
     <!-- Ambient Animated Aurora Wallpaper -->
