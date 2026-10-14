@@ -194,6 +194,151 @@
         </div>
     </div>
 
+    <!-- Live Threat Intelligence Consensus & Security Feeds -->
+    {% if analysis.threat_intel %}
+    <div class="soc-card p-4 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom border-secondary border-opacity-25 pb-2 mb-3 gap-2">
+            <h3 class="text-white fs-5 fw-bold mb-0 font-mono">
+                <i class="bi bi-shield-shaded me-2 text-primary"></i>Multi-Source Threat Intelligence Consensus
+            </h3>
+            <div class="d-flex align-items-center gap-2 font-mono small">
+                <span class="badge {% if analysis.threat_intel.consensus_verdict == 'Malicious' %}bg-danger{% elif analysis.threat_intel.consensus_verdict == 'Suspicious' %}bg-warning text-dark{% elif analysis.threat_intel.consensus_verdict == 'Clean' %}bg-success{% else %}bg-secondary{% endif %} px-3 py-1.5 fs-7">
+                    {{ analysis.threat_intel.consensus_verdict | upper }} (Score: {{ analysis.threat_intel.risk_score }}/100)
+                </span>
+                <span class="badge bg-dark text-info border border-info border-opacity-25 px-2.5 py-1.5">
+                    Confidence: {{ (analysis.threat_intel.confidence * 100) | round | int }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="p-3 rounded-3 bg-dark bg-opacity-50 border border-danger border-opacity-25 text-center">
+                    <span class="text-danger font-mono d-block small mb-1"><i class="bi bi-x-octagon-fill me-1"></i> MALICIOUS DETECTIONS</span>
+                    <strong class="text-danger fs-3 font-mono">{{ analysis.threat_intel.malicious_count }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 rounded-3 bg-dark bg-opacity-50 border border-warning border-opacity-25 text-center">
+                    <span class="text-warning font-mono d-block small mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> SUSPICIOUS FLAGS</span>
+                    <strong class="text-warning fs-3 font-mono">{{ analysis.threat_intel.suspicious_count }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 rounded-3 bg-dark bg-opacity-50 border border-success border-opacity-25 text-center">
+                    <span class="text-success font-mono d-block small mb-1"><i class="bi bi-check-circle-fill me-1"></i> HARMLESS / CLEAN</span>
+                    <strong class="text-success fs-3 font-mono">{{ analysis.threat_intel.harmless_count }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider Feed Breakdown -->
+        <h4 class="text-white fs-6 fw-bold mb-3 font-mono">
+            <i class="bi bi-diagram-3 me-2 text-info"></i>Active Security Provider Verifications
+        </h4>
+        <div class="row g-3 mb-2">
+            {% for prov in analysis.threat_intel.providers %}
+            <div class="col-md-6 col-lg-4">
+                <div class="p-3 rounded-3 bg-dark bg-opacity-40 border border-secondary border-opacity-25 h-100 font-mono small">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong class="text-white">{{ prov.provider }}</strong>
+                        <span class="badge {% if prov.verdict in ['Malicious', 'Phishing', 'Blacklisted'] %}bg-danger{% elif prov.verdict == 'Suspicious' %}bg-warning text-dark{% elif prov.verdict in ['Clean', 'Harmless', 'Info'] %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ prov.verdict }}
+                        </span>
+                    </div>
+                    <p class="text-muted small mb-0">{{ prov.message or 'Provider verification completed' }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Live WHOIS / RDAP Registration Context -->
+    {% if analysis.threat_intel and analysis.threat_intel.whois and analysis.threat_intel.whois.registrar %}
+    <div class="soc-card p-4 mb-4">
+        <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+            <i class="bi bi-calendar-event me-2 text-primary"></i>WHOIS &amp; Domain Registration Intelligence
+        </h3>
+        <div class="row g-3 font-mono small">
+            <div class="col-sm-6 col-md-3">
+                <span class="text-muted d-block">REGISTRAR</span>
+                <strong class="text-white">{{ analysis.threat_intel.whois.registrar or 'Unknown' }}</strong>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <span class="text-muted d-block">DOMAIN AGE</span>
+                <strong class="{% if analysis.threat_intel.whois.age_days and analysis.threat_intel.whois.age_days < 90 %}text-warning{% else %}text-info{% endif %}">
+                    {% if analysis.threat_intel.whois.age_days is not none %}
+                        {{ analysis.threat_intel.whois.age_days }} Days
+                        {% if analysis.threat_intel.whois.age_days < 30 %}<span class="badge bg-danger ms-1">NEW</span>{% endif %}
+                    {% else %}
+                        Unavailable
+                    {% endif %}
+                </strong>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <span class="text-muted d-block">CREATION DATE</span>
+                <span class="text-white">{{ analysis.threat_intel.whois.created_date or 'Unavailable' }}</span>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <span class="text-muted d-block">EXPIRATION DATE</span>
+                <span class="text-white">{{ analysis.threat_intel.whois.expires_date or 'Unavailable' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Live DNS Resolution & Mail Infrastructure -->
+    {% if analysis.threat_intel and analysis.threat_intel.dns and analysis.threat_intel.dns.domain %}
+    <div class="soc-card p-4 mb-4">
+        <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">
+            <i class="bi bi-hdd-network me-2 text-primary"></i>DNS Resolution &amp; Email Authentication Records
+        </h3>
+        <div class="row g-3 font-mono small">
+            <div class="col-md-6">
+                <span class="text-muted d-block mb-1">A / IPV4 RECORDS</span>
+                {% if analysis.threat_intel.dns.a %}
+                    {% for ip in analysis.threat_intel.dns.a %}
+                        <code class="d-inline-block text-info me-2">{{ ip }}</code>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-secondary">No A records resolved</span>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <span class="text-muted d-block mb-1">MX (MAIL EXCHANGE) RECORDS</span>
+                {% if analysis.threat_intel.dns.mx %}
+                    {% for mx in analysis.threat_intel.dns.mx %}
+                        <code class="d-inline-block text-warning me-2 text-break">{{ mx }}</code>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i> No MX records configured</span>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <span class="text-muted d-block mb-1">DMARC POLICY RECORD</span>
+                {% if analysis.threat_intel.dns.dmarc %}
+                    {% for dm in analysis.threat_intel.dns.dmarc %}
+                        <code class="d-block text-success text-break">{{ dm }}</code>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i> No DMARC record found</span>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <span class="text-muted d-block mb-1">NAME SERVERS (NS)</span>
+                {% if analysis.threat_intel.dns.ns %}
+                    {% for ns in analysis.threat_intel.dns.ns %}
+                        <code class="d-inline-block text-white me-2">{{ ns }}</code>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-secondary">Unavailable</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Related Email Scan Incidents Grid -->
     <div class="soc-card p-4 mb-4">
         <h3 class="text-white fs-5 fw-bold mb-3 font-mono border-bottom border-secondary border-opacity-25 pb-2">

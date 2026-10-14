@@ -1151,12 +1151,34 @@ def _scan_scope_query():
     if not user:
         # Guests and unauthenticated requests cannot query general scan history
         return EmailScan.query.filter(db.false())
+
+    tenant_clause = (EmailScan.tenant_id == user.tenant_id) if getattr(user, "tenant_id", None) else db.true()
+
     if user.role == User.ROLE_ADMIN:
-        # Administrators can review their own scans, unassigned public visitor scans, and case-linked scans
+        # Administrators can review their own scans, unassigned public visitor scans within their tenant, and case-linked scans
         return EmailScan.query.filter(
+            and_(
+                tenant_clause,
+                or_(
+                    EmailScan.user_id == user.id,
+                    EmailScan.user_id.is_(None),
+                    EmailScan.case_links.any(
+                        CaseScan.case.has(
+                            or_(
+                                InvestigationCase.created_by_id == user.id,
+                                InvestigationCase.assigned_to_id == user.id,
+                            )
+                        )
+                    ),
+                ),
+            )
+        )
+    # Users only see their own scans, or scans linked to a case they created or are assigned to
+    return EmailScan.query.filter(
+        and_(
+            tenant_clause,
             or_(
                 EmailScan.user_id == user.id,
-                EmailScan.user_id.is_(None),
                 EmailScan.case_links.any(
                     CaseScan.case.has(
                         or_(
@@ -1165,19 +1187,6 @@ def _scan_scope_query():
                         )
                     )
                 ),
-            )
-        )
-    # Users only see their own scans, or scans linked to a case they created or are assigned to
-    return EmailScan.query.filter(
-        or_(
-            EmailScan.user_id == user.id,
-            EmailScan.case_links.any(
-                CaseScan.case.has(
-                    or_(
-                        InvestigationCase.created_by_id == user.id,
-                        InvestigationCase.assigned_to_id == user.id,
-                    )
-                )
             ),
         )
     )
@@ -2833,6 +2842,33 @@ def scan_ioc():
         .all()
     )
 
+    # Live Multi-Source Threat Intelligence Enrichment
+    threat_intel = None
+    try:
+        from services.threat_intelligence import ThreatEnrichmentService
+        ti_service = ThreatEnrichmentService(timeout=3)
+        threat_intel = ti_service.enrich_ioc(query)
+    except Exception as exc:
+        threat_intel = {
+            "consensus_verdict": "Unavailable",
+            "risk_score": 0,
+            "message": str(exc),
+            "providers": [],
+        }
+
+    base_score = 85 if matching_scans else 0
+    ti_score = threat_intel.get("risk_score", 0) if threat_intel else 0
+    combined_score = max(base_score, ti_score)
+
+    if combined_score >= 70:
+        verdict = "Threat Record Found / Malicious"
+    elif combined_score >= 35:
+        verdict = "Suspicious Telemetry Observed"
+    elif matching_scans:
+        verdict = "Historical Telemetry Found"
+    else:
+        verdict = "Clean / No Threats Recorded"
+
     analysis_data = {
         "query": query,
         "ioc_type": ioc_type,
@@ -2843,24 +2879,13 @@ def scan_ioc():
         "sha1_hash": sha1_hash,
         "sha256_hash": sha256_hash,
         "matching_scans": matching_scans,
-        "matches_count": len(
-            matching_scans
-        ),
-        "reputation_score": (
-            85
-            if matching_scans
-            else 0
-        ),
-        "verdict": (
-            "Threat Record Found"
-            if matching_scans
-            else "Clean / No Threats Recorded"
-        ),
+        "matches_count": len(matching_scans),
+        "reputation_score": combined_score,
+        "verdict": verdict,
+        "threat_intel": threat_intel,
     }
 
-    if request.args.get(
-        "format"
-    ) == "json":
+    if request.args.get("format") == "json":
         return jsonify(
             {
                 "query": query,
@@ -2871,19 +2896,10 @@ def scan_ioc():
                     "sha1": sha1_hash,
                     "sha256": sha256_hash,
                 },
-                "matches_count": len(
-                    matching_scans
-                ),
-                "reputation_score": (
-                    analysis_data[
-                        "reputation_score"
-                    ]
-                ),
-                "verdict": (
-                    analysis_data[
-                        "verdict"
-                    ]
-                ),
+                "matches_count": len(matching_scans),
+                "reputation_score": combined_score,
+                "verdict": verdict,
+                "threat_intel": threat_intel,
             }
         )
 
