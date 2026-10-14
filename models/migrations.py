@@ -26,6 +26,10 @@ def apply_schema_migrations(engine=None):
                     conn.execute(text("ALTER TABLE users ADD COLUMN mfa_recovery_codes TEXT"))
                 if "is_active" not in user_cols:
                     conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL"))
+                if "google_id" not in user_cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR(128)"))
+                if "avatar_url" not in user_cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(512)"))
                 # Migrate any legacy enterprise analyst/staff accounts to standard user
                 conn.execute(text("UPDATE users SET role = 'user' WHERE role IN ('analyst', 'staff')"))
                 conn.commit()

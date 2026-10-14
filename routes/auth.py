@@ -193,7 +193,15 @@ def google_callback():
         return redirect(url_for("auth.login"))
 
     email = user_info["email"].strip().lower()
-    user = User.query.filter_by(email=email).first()
+    google_sub = user_info.get("sub", "")  # Google's unique user ID
+    avatar_url = user_info.get("picture", "")
+
+    # Look up by google_id first (most reliable), then fall back to email
+    user = None
+    if google_sub:
+        user = User.query.filter_by(google_id=google_sub).first()
+    if not user:
+        user = User.query.filter_by(email=email).first()
 
     if user and not user.is_active:
         flash("This account has been deactivated. Please contact an administrator.", "danger")
@@ -214,6 +222,8 @@ def google_callback():
             password=generate_password_hash(secrets.token_urlsafe(32)),
             role=User.ROLE_USER,
             tenant_id="default",
+            google_id=google_sub or None,
+            avatar_url=avatar_url or None,
         )
         db.session.add(user)
         try:
@@ -229,6 +239,20 @@ def google_callback():
             db.session.rollback()
             flash("Error creating user account from Google profile.", "danger")
             return redirect(url_for("auth.login"))
+    else:
+        # Update google_id and avatar if not set (linking existing account)
+        changed = False
+        if google_sub and not user.google_id:
+            user.google_id = google_sub
+            changed = True
+        if avatar_url and user.avatar_url != avatar_url:
+            user.avatar_url = avatar_url
+            changed = True
+        if changed:
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     # MFA Enforcement if enabled on the user's account
     if user.mfa_enabled:

@@ -26,6 +26,9 @@ class User(db.Model):
     # their original actor instead of losing referential integrity.
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    # Google OAuth2 fields — used for Google Sign-In account linking
+    google_id = db.Column(db.String(128), nullable=True, unique=True, index=True)
+    avatar_url = db.Column(db.String(512), nullable=True)
 
     scans = db.relationship("EmailScan", backref="user", lazy=True, cascade="all, delete-orphan")
     logs = db.relationship("SystemLog", backref="actor", lazy=True)
@@ -39,5 +42,7 @@ class User(db.Model):
             "tenant_id": self.tenant_id,
             "mfa_enabled": self.mfa_enabled,
             "is_active": self.is_active,
+            "has_google_auth": bool(self.google_id),
+            "avatar_url": self.avatar_url,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
