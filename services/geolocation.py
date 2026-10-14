@@ -301,9 +301,14 @@ class OnlineFallbackProvider:
         self.api_key = api_key
         self.timeout = timeout
         self.is_available = True
+        self._rate_limited_until: float = 0.0  # epoch seconds; backoff when rate limited
 
     def lookup(self, ip: str) -> Optional[Dict[str, Any]]:
         if not self.is_available:
+            return None
+
+        # Honour rate-limit backoff window
+        if time.time() < self._rate_limited_until:
             return None
 
         try:
@@ -316,32 +321,62 @@ class OnlineFallbackProvider:
             return None
 
     def _lookup_ipapi(self, ip: str) -> Optional[Dict[str, Any]]:
-        url = f"http://ip-api.com/json/{urllib.parse.quote(ip)}?fields=status,country,countryCode,regionName,city,lat,lon,timezone,as,org,query"
+        url = f"http://ip-api.com/json/{urllib.parse.quote(ip)}?fields=status,message,country,countryCode,regionName,city,lat,lon,timezone,as,org,query"
         req = urllib.request.Request(url, headers={"User-Agent": "Guardly-Geolocation-Fallback/2.4"})
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if data.get("status") == "success":
-                as_info = data.get("as", "")
-                asn_val = None
-                if as_info and as_info.startswith("AS"):
-                    try:
-                        asn_val = int(as_info.split()[0][2:])
-                    except ValueError:
-                        asn_val = None
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                # Check for HTTP 429 rate limit
+                if hasattr(resp, "status") and resp.status == 429:
+                    retry_after = int(resp.headers.get("Retry-After", "60"))
+                    self._rate_limited_until = time.time() + retry_after
+                    logger.warning(
+                        f"[GEOLOCATION FALLBACK] ip-api.com rate limit hit (HTTP 429). "
+                        f"Backing off for {retry_after}s. "
+                        f"Consider upgrading to ip-api Pro or disabling GEOLOCATION_FALLBACK_ENABLED=false."
+                    )
+                    return None
 
-                return {
-                    "country": data.get("country", "Unknown"),
-                    "country_code": data.get("countryCode", "Unknown"),
-                    "region": data.get("regionName", "Unknown"),
-                    "city": data.get("city", "Unknown"),
-                    "latitude": data.get("lat"),
-                    "longitude": data.get("lon"),
-                    "timezone": data.get("timezone", "Unknown"),
-                    "asn": asn_val,
-                    "organization": data.get("org", "Unknown"),
-                    "network": "Unknown",
-                    "status": "ok",
-                }
+                data = json.loads(resp.read().decode("utf-8"))
+
+                # Check for application-level rate limit response
+                if data.get("status") == "fail":
+                    msg = data.get("message", "")
+                    if "quota" in msg.lower() or "limit" in msg.lower() or "rate" in msg.lower():
+                        self._rate_limited_until = time.time() + 60  # back off 60s
+                        logger.warning(
+                            f"[GEOLOCATION FALLBACK] ip-api.com rate limit reached (message: '{msg}'). "
+                            f"Backing off for 60s. Free tier allows 45 req/min. "
+                            f"To suppress: set GEOLOCATION_FALLBACK_ENABLED=false in .env "
+                            f"(MaxMind local DB is already active and preferred)."
+                        )
+                    else:
+                        logger.debug(f"[GEOLOCATION FALLBACK] ip-api.com returned fail for {ip}: {msg}")
+                    return None
+
+                if data.get("status") == "success":
+                    as_info = data.get("as", "")
+                    asn_val = None
+                    if as_info and as_info.startswith("AS"):
+                        try:
+                            asn_val = int(as_info.split()[0][2:])
+                        except ValueError:
+                            asn_val = None
+
+                    return {
+                        "country": data.get("country", "Unknown"),
+                        "country_code": data.get("countryCode", "Unknown"),
+                        "region": data.get("regionName", "Unknown"),
+                        "city": data.get("city", "Unknown"),
+                        "latitude": data.get("lat"),
+                        "longitude": data.get("lon"),
+                        "timezone": data.get("timezone", "Unknown"),
+                        "asn": asn_val,
+                        "organization": data.get("org", "Unknown"),
+                        "network": "Unknown",
+                        "status": "ok",
+                    }
+        except Exception:
+            raise
         return None
 
     def _lookup_ipinfo(self, ip: str) -> Optional[Dict[str, Any]]:
