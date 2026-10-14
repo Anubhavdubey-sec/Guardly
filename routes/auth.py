@@ -151,6 +151,114 @@ def login():
     return render_template("login.html")
 
 
+@auth_bp.route("/auth/google/login")
+def google_login():
+    """Initiates Google OAuth 2.0 / OpenID Connect authorization flow."""
+    if getattr(g, "current_user", None):
+        return redirect(url_for("auth.dashboard"))
+
+    from services.oauth import is_google_auth_configured, oauth
+
+    if not is_google_auth_configured():
+        flash(
+            "Google Sign-In is not yet configured with client credentials. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
+            "warning",
+        )
+        return redirect(url_for("auth.login"))
+
+    redirect_uri = url_for("auth.google_callback", _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@auth_bp.route("/auth/google/callback")
+def google_callback():
+    """Handles Google OAuth2 authorization code callback and establishes user session."""
+    from services.oauth import is_google_auth_configured, oauth
+
+    if not is_google_auth_configured():
+        flash("Google Sign-In is not configured.", "danger")
+        return redirect(url_for("auth.login"))
+
+    try:
+        token = oauth.google.authorize_access_token()
+        user_info = token.get("userinfo")
+        if not user_info:
+            user_info = oauth.google.userinfo()
+    except Exception as exc:
+        flash(f"Google authentication failed: {exc}", "danger")
+        return redirect(url_for("auth.login"))
+
+    if not user_info or not user_info.get("email"):
+        flash("Could not retrieve email from Google profile. Please try again.", "danger")
+        return redirect(url_for("auth.login"))
+
+    email = user_info["email"].strip().lower()
+    user = User.query.filter_by(email=email).first()
+
+    if user and not user.is_active:
+        flash("This account has been deactivated. Please contact an administrator.", "danger")
+        return redirect(url_for("auth.login"))
+
+    if not user:
+        import secrets
+        # Automatically provision new user account
+        raw_name = user_info.get("name") or email.split("@")[0]
+        clean_username = re.sub(r"[^a-zA-Z0-9_-]", "", raw_name)[:30] or "user"
+        existing_username = User.query.filter_by(username=clean_username).first()
+        if existing_username:
+            clean_username = f"{clean_username}_{secrets.token_hex(2)}"
+
+        user = User(
+            username=clean_username,
+            email=email,
+            password=generate_password_hash(secrets.token_urlsafe(32)),
+            role=User.ROLE_USER,
+            tenant_id="default",
+        )
+        db.session.add(user)
+        try:
+            db.session.commit()
+            record_event(
+                "user_registered",
+                target_type="user",
+                target_id=user.id,
+                detail="User account provisioned via Google OAuth2.",
+                actor=user,
+            )
+        except Exception:
+            db.session.rollback()
+            flash("Error creating user account from Google profile.", "danger")
+            return redirect(url_for("auth.login"))
+
+    # MFA Enforcement if enabled on the user's account
+    if user.mfa_enabled:
+        session.clear()
+        session["mfa_pending_user_id"] = user.id
+        session["mfa_pending_expires"] = time.time() + 300
+        return redirect(url_for("auth.login_mfa"))
+
+    # Successful login
+    session.clear()
+    session["user_id"] = user.id
+    session["username"] = user.username
+    session.permanent = True
+
+    record_event(
+        "login_succeeded",
+        target_type="user",
+        target_id=user.id,
+        detail="User signed in via Google OAuth2.",
+        actor=user,
+    )
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    flash(f"Welcome, {user.username}!", "success")
+    return redirect(url_for("auth.dashboard"))
+
+
 @auth_bp.route("/login/mfa", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login_mfa():

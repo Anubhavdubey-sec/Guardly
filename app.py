@@ -145,6 +145,8 @@ def create_app(test_config=None):
     db.init_app(app)
     init_csrf(app)
     limiter.init_app(app)
+    from services.oauth import init_oauth
+    init_oauth(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(scanner_bp)

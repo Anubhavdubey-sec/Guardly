@@ -120,5 +120,9 @@ class Config:
     SMTP_ENABLED = (os.getenv("SMTP_ENABLED") or "False").lower() in ("true", "1", "t")
     GUEST_RETENTION_HOURS = int(os.getenv("GUEST_RETENTION_HOURS") or "24")
 
+    # Google OAuth2 Authentication
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+
     # Debug Configuration
     DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
