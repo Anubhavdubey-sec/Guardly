@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 from werkzeug.security import generate_password_hash
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from models.migrations import apply_schema_migrations
@@ -119,6 +120,7 @@ def create_app(test_config=None):
     app = Flask(__name__)
 
     app.config.from_object(Config)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     if test_config:
         app.config.update(test_config)
