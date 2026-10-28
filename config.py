@@ -61,6 +61,10 @@ class Config:
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{normalized_db_path}"
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
     _auto_create_env = os.getenv("AUTO_CREATE_SCHEMA") or os.getenv("PHISHING_DETECTOR_AUTO_CREATE_SCHEMA") or "False"
     AUTO_CREATE_SCHEMA = _auto_create_env.lower() in ("true", "1", "t")
 

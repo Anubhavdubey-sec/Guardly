@@ -25,8 +25,14 @@ from services.password_validator import validate_password
 
 
 def initialize_database():
-    db.create_all()
-    apply_schema_migrations()
+    try:
+        db.create_all()
+        apply_schema_migrations()
+    except Exception as e:
+        import logging
+        logging.getLogger("guardly").error(
+            f"[Database Initialization Warning] Could not connect to database: {e}"
+        )
 
 
 def ensure_mysql_database():
